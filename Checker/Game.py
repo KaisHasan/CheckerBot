@@ -381,36 +381,157 @@ class Board:
         d = self._disks_at[location]
         self._disks[d.get_colour()].discard(d)
 
+    def add_disk_at(self, disk: Disk, location: tuple) -> None:
+        """Use it to add a disk in a location
+
+        Parameters
+        ----------
+        disk : Disk
+        location : tuple
+            location on the board where you want to add the given disk.
+
+        Raises
+        ------
+        ValueError
+            if the location not empty (i.e there is disk on it).
+
+        Returns
+        -------
+        None
+
+        """
+        if location in self._disks_at:
+            raise ValueError('location is already have a Disk!')
+        self._disks[disk.get_colour()].add(disk)
+        self._disks_at[location] = disk
+
+
+class Moves:
+    def is_valid_position(self, x: int, y: int) -> bool:
+        return x >= 0 and x < 8 and y >= 0 and y < 8
+
+    def get_next_boards(self, board: Board, location: tuple) -> list:
+        # frontier is a list of tuples.
+        # tuple[0] is the board reached so far.
+        # tuple[1] is the current location
+        # tuple[2] is a flag that indicates if a non-eat move is allowed
+        frontier = []
+        frontier.append((board, location, True))
+        # list of all next boards
+        next_boards = []
+        while frontier:
+            current_board, current_location, non_eat_move = frontier.pop()
+            current_disk = current_board.get_disk_at(location)
+            if non_eat_move is True:
+                for dx, dy in current_disk.get_directions():
+                    next_x = current_location[0] + dx
+                    next_y = current_location[1] + dy
+                    if not self.is_valid_position(next_x, next_y):
+                        continue
+                    next_location = (next_x, next_y)
+                    if current_board.get_disk_at(next_location) is None:
+                        # very bad time complexity, need future improvement
+                        # build a new board
+                        next_board = Board(white_disks = board.get_disks('white').copy()
+                                           , black_disks = board.get_disks('black').copy())
+                        # remove the disk from the old location
+                        next_board.remove_disk_at(location)
+                        # create a new disk to update the information in it
+                        next_disk = current_disk
+                        next_disk.set_location(next_location)  # update the location.
+                        # add the disk to the new location
+                        next_board.add_disk_at(current_disk, next_location)
+                        # add the board to the next_boards
+                        next_boards.append(next_board)
+                        # don't add to the frontier if the disk have just promoted
+                        if not current_disk.is_king() and next_disk.is_king():
+                            continue
+                        frontier.append(next_board)
+
+            # eat moves:
+            for dx, dy in current_disk.get_directions():
+                next_x = current_location[0] + 2*dx
+                next_y = current_location[1] + 2*dy
+                if not self.is_valid_position(next_x, next_y):
+                    continue
+                next_location = (next_x, next_y)
+                enemy_location = (current_location[0] + dx,
+                                  current_location[1] + dy)
+                if current_board.get_disk_at(next_location) is not None:
+                    continue
+                if current_board.get_disk_at(enemy_location) is None:
+                    continue
+                # enemy disk to be eaten
+                enemy_disk = current_board.get_disk_at(enemy_location)
+                if current_disk.is_enemy(enemy_disk) is False:
+                    continue
+                # very bad time complexity, need future improvement
+                # build a new board
+                next_board = Board(white_disks=board.get_disks('white').copy(),
+                                   black_disks=board.get_disks('black').copy())
+                # remove the disks from the old locations
+                next_board.remove_disk_at(location)
+                next_board.remove_disk_at(enemy_location)
+                # create a new disk to update the information in it
+                next_disk = current_disk
+                next_disk.set_location(next_location)  # update the location.
+                # add the disk to the new location
+                next_board.add_disk_at(current_disk, next_location)
+                # add the board to the next_boards
+                next_boards.append(next_board)
+                # don't add to the frontier if the disk have just promoted
+                if not current_disk.is_king() and next_disk.is_king():
+                    continue
+                frontier.append(next_board)
+
+        return next_boards
+
+    def get_all_next_boards(self, board: Board, colour: str) -> list:
+        if colour not in ['white', 'black']:
+            raise ValueError("colour must be either 'white', or 'black'!")
+        next_boards = []
+        for disk in board.get_disks(colour):
+            next_boards.extend(
+                    self.get_next_boards(board, disk.get_location())
+                )
+        return next_boards
+
 
 if __name__ == '__main__':
-    d1 = Disk(location=(0, 0), colour='white')
-    d2 = Disk(location=(0, 0), colour='white')
-    assert(d1 == d2)
-    assert(hash(d1) == hash(d2))
-    d1.set_location((7, 1))
-    assert(d1 != d2)
-    assert(hash(d1) != hash(d2))
-    assert(d1.is_king() is True)
-    d2.set_colour('black')
-    assert(d1.is_enemy(d2) is True)
-    d1 = Disk(location=(1, 1), colour='white')
-    d2 = Disk(location=(2, 1), colour='white')
-    d3 = Disk(location=(3, 1), colour='black')
-    d4 = Disk(location=(3, 3), colour='black')
-    white_disks = set([d1, d2])
-    black_disks = set([d3, d4])
-    b = Board(white_disks, black_disks)
-    assert(b.get_number_of_disks() == 4)
-    assert(b.get_number_of_disks('white') == 2)
-    assert(b.get_number_of_disks('black') == 2)
-    assert(b.get_number_of_kings('white') == 0)
-    assert(b.get_number_of_kings('black') == 0)
-    b.remove_disk_at((1, 1))
-    assert(b.get_number_of_disks('white') == 1)
-    b.remove_disk_at((3, 3))
-    assert(b.get_number_of_disks('black') == 1)
-    assert(b.is_empty('white') is False)
-    b.remove_disk_at((2, 1))
-    assert(b.get_number_of_disks('white') == 0)
-    assert(b.is_empty('white') is True)
+    def disk_and_board_test():
+        d1 = Disk(location=(0, 0), colour='white')
+        d2 = Disk(location=(0, 0), colour='white')
+        assert(d1 == d2)
+        assert(hash(d1) == hash(d2))
+        d1.set_location((7, 1))
+        assert(d1 != d2)
+        assert(hash(d1) != hash(d2))
+        assert(d1.is_king() is True)
+        d2.set_colour('black')
+        assert(d1.is_enemy(d2) is True)
+        d1 = Disk(location=(1, 1), colour='white')
+        d2 = Disk(location=(2, 1), colour='white')
+        d3 = Disk(location=(3, 1), colour='black')
+        d4 = Disk(location=(3, 3), colour='black')
+        white_disks = set([d1, d2])
+        black_disks = set([d3, d4])
+        b = Board(white_disks, black_disks)
+        assert(b.get_number_of_disks() == 4)
+        assert(b.get_number_of_disks('white') == 2)
+        assert(b.get_number_of_disks('black') == 2)
+        assert(b.get_number_of_kings('white') == 0)
+        assert(b.get_number_of_kings('black') == 0)
+        b2 = Board(white_disks = b.get_disks('white').copy(),
+                   black_disks = b.get_disks('black').copy())
+        b.remove_disk_at((1, 1))
+        assert(b2 is not b)
+        assert(b.get_number_of_disks('white') == 1)
+        b.remove_disk_at((3, 3))
+        assert(b.get_number_of_disks('black') == 1)
+        assert(b.is_empty('white') is False)
+        b.remove_disk_at((2, 1))
+        assert(b.get_number_of_disks('white') == 0)
+        assert(b.is_empty('white') is True)
+
+    disk_and_board_test()
     print('Everything work.')
