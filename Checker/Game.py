@@ -14,7 +14,7 @@ class Disk:
     # Valid Directions of a non-king black Disk.
     _black_directions = ((-1, -1), (-1, 1))
 
-    def __init__(self, *, location: tuple, colour: str) -> None:
+    def __init__(self, *, location: tuple = None, colour: str = None) -> None:
         """
 
         Parameters
@@ -125,8 +125,12 @@ class Disk:
 
         """
         self._location = location
+        if self._colour == 'white' and self._location[0] == 7:
+            self.promote_to_king()
+        if self._colour == 'black' and self._location[0] == 0:
+            self.promote_to_king()
 
-    def promote_to_king(self):
+    def promote_to_king(self) -> None:
         """Promote the disk to be a king.
 
         Returns
@@ -134,22 +138,56 @@ class Disk:
         None.
 
         """
+        if self._king:
+            return
         self._king = True
         self._directions = *self._white_directions, *self._black_directions
+
+    def is_enemy(self, other) -> bool:
+        """Use it to find if a given disk is enemy with the current disk.
+
+        Parameters
+        ----------
+        other : Disk
+
+        Raises
+        ------
+        TypeError
+            if the type of other is not Disk.
+
+        Returns
+        -------
+        bool
+            True if other have same colour as current disk, False otherwise.
+
+        """
+        if not isinstance(other, type(self)):
+            raise TypeError('Argument must be of type Disk')
+        return self._colour != other.get_colour()
+
+    def __hash__(self):
+        return hash((self._location, self._king, self._colour))
+
+    def __eq__(self, other):
+        if not isinstance(other, type(self)):
+            return False
+        return self._colour == other.get_colour() and \
+            self._king == other.is_king() and \
+            self._location == other.get_location()
 
 
 class Board:
     """Represents the CheckerBoard."""
 
-    def __init__(self, white_disks: list, black_disks: list) -> None:
+    def __init__(self, white_disks: set, black_disks: set) -> None:
         """
 
         Parameters
         ----------
-        white_disks : list
+        white_disks : set
             contains all white disks.
             type of each element is Disk.
-        black_disks : list
+        black_disks : set
             contains all black disks.
             type of each element is Disk.
 
@@ -163,10 +201,6 @@ class Board:
         self._disks['white'] = white_disks
         self._disks['black'] = black_disks
 
-        # Initialize _kings which contains the number of kings in each colour
-        self._kings = {'white': self.get_number_of_kings('white'),
-                       'black': self.get_number_of_kings('black')}
-
         # Initialize dictionary with:
         # location as key and disk at that location as value.
         self._disks_at = self.build_disks_at()
@@ -179,15 +213,23 @@ class Board:
         colour : str
             the colour of the kings.
 
+        Raises
+        ------
+        ValueError
+            if the colour is neither 'white', nor 'black'.
+
         Returns
         -------
         int
             number of kings with the given colour.
 
         """
+        if colour not in ['white', 'black']:
+            raise ValueError("colour must be either 'white' or 'black'!")
         num = 0
         for disk in self._disks[colour]:
-            num += disk.colour == colour
+            if disk.is_king() and disk.colour == colour:
+                num += 1
 
         return num
 
@@ -213,7 +255,7 @@ class Board:
 
         """
         if colour is None:
-            return self.get_number_of_disks() + self.get_number_of_disks('black')
+            return self.get_number_of_disks('white') + self.get_number_of_disks('black')
         elif colour == 'white':
             return len(self._disks['white'])
         elif colour == 'black':
@@ -245,7 +287,7 @@ class Board:
         return d
 
     def get_disk_at(self, location: tuple) -> Disk:
-        """Use it to get the disk in some location.
+        """Use it to get the disk given the location.
 
         Parameters
         ----------
@@ -262,7 +304,7 @@ class Board:
             return self._disks[location]
         return None
 
-    def get_disks(self, colour: str = None) -> list:
+    def get_disks(self, colour: str = None) -> set:
         """Get all disks of a given colour, or all disks if colour is None.
 
         Parameters
@@ -277,7 +319,7 @@ class Board:
 
         Returns
         -------
-        list
+        set
 
         """
         if colour is None:
@@ -311,11 +353,64 @@ class Board:
 
         """
         if colour is None or colour in ['white', 'black']:
-            return self.get_number_of_disks(colour)
+            return self.get_number_of_disks(colour) == 0
         else:
             raise ValueError("""colour must be
                              "black", or "white", or "None"! """)
 
+    def remove_disk_at(self, location: tuple) -> None:
+        """Use it to remove a disk with a given location from the board.
+
+        Parameters
+        ----------
+        location : tuple
+            location at the board of disk which we want to remove.
+
+        Raises
+        ------
+        ValueError
+            if location does not contain any Disk.
+
+        Returns
+        -------
+        None
+
+        """
+        if location not in self._disks_at:
+            raise KeyError('location is not found!')
+        d = self._disks_at[location]
+        self._disks[d.get_colour()].discard(d)
+
 
 if __name__ == '__main__':
-    pass
+    d1 = Disk(location=(0, 0), colour='white')
+    d2 = Disk(location=(0, 0), colour='white')
+    assert(d1 == d2)
+    assert(hash(d1) == hash(d2))
+    d1.set_location((7, 1))
+    assert(d1 != d2)
+    assert(hash(d1) != hash(d2))
+    assert(d1.is_king() is True)
+    d2.set_colour('black')
+    assert(d1.is_enemy(d2) is True)
+    d1 = Disk(location=(1, 1), colour='white')
+    d2 = Disk(location=(2, 1), colour='white')
+    d3 = Disk(location=(3, 1), colour='black')
+    d4 = Disk(location=(3, 3), colour='black')
+    white_disks = set([d1, d2])
+    black_disks = set([d3, d4])
+    b = Board(white_disks, black_disks)
+    assert(b.get_number_of_disks() == 4)
+    assert(b.get_number_of_disks('white') == 2)
+    assert(b.get_number_of_disks('black') == 2)
+    assert(b.get_number_of_kings('white') == 0)
+    assert(b.get_number_of_kings('black') == 0)
+    b.remove_disk_at((1, 1))
+    assert(b.get_number_of_disks('white') == 1)
+    b.remove_disk_at((3, 3))
+    assert(b.get_number_of_disks('black') == 1)
+    assert(b.is_empty('white') is False)
+    b.remove_disk_at((2, 1))
+    assert(b.get_number_of_disks('white') == 0)
+    assert(b.is_empty('white') is True)
+    print('Everything work.')
