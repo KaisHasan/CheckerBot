@@ -412,6 +412,9 @@ class Board:
         self._disks[disk.get_colour()].add(disk)
         self._disks_at[location] = disk
 
+    def get_status(self) -> int:
+        pass
+
 
 class Moves:
     def is_valid_position(self, x: int, y: int) -> bool:
