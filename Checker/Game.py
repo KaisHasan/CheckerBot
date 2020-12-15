@@ -420,8 +420,9 @@ class Moves:
     def is_valid_position(self, x: int, y: int) -> bool:
         return x >= 0 and x < 8 and y >= 0 and y < 8
 
-    def get_next_boards(self, board: Board, location: tuple,
-                        next_locations: list = None) -> list:
+    def get_next_boards(self, board: Board, location: tuple, *,
+                        next_locations: list = None,
+                        threatened: dict = None) -> list:
         # frontier is a list of tuples.
         # tuple[0] is the board reached so far.
         # tuple[1] is the current location
@@ -479,6 +480,8 @@ class Moves:
                 enemy_disk = current_board.get_disk_at(enemy_location)
                 if current_disk.is_enemy(enemy_disk) is False:
                     continue
+                if threatened is not None:
+                    threatened[enemy_disk.get_location()] = 1
                 # very bad time complexity, need future improvement
                 # build a new board
                 next_board = Board(white_disks=current_board.get_disks('white').copy(),
@@ -504,13 +507,15 @@ class Moves:
 
         return next_boards
 
-    def get_all_next_boards(self, board: Board, colour: str) -> list:
+    def get_all_next_boards(self, board: Board, colour: str,
+                            threatened: dict = None) -> list:
         if colour not in ['white', 'black']:
             raise ValueError("colour must be either 'white', or 'black'!")
         next_boards = []
         for disk in board.get_disks(colour):
             next_boards.extend(
-                    self.get_next_boards(board, disk.get_location())
+                    self.get_next_boards(board, disk.get_location(),
+                                         threatened=threatened)
                 )
         return next_boards
 
@@ -573,7 +578,7 @@ if __name__ == '__main__':
         }
         for k, v in d_moves.items():
             next_locations = []
-            _ = moves.get_next_boards(b, k, next_locations)
+            _ = moves.get_next_boards(b, k, next_locations=next_locations)
             code_results = sorted(next_locations)
             correct_results = sorted(v)
             assert(code_results == correct_results)
@@ -582,7 +587,7 @@ if __name__ == '__main__':
         d.promote_to_king()
         b.add_disk_at(d, (3, 5))
         next_locations = []
-        _ = moves.get_next_boards(b, (3, 5), next_locations)
+        _ = moves.get_next_boards(b, (3, 5), next_locations=next_locations)
         code_results = sorted(next_locations)
         correct_results = sorted([(4, 6), (5, 3), (7, 1), (7, 5), (5, 7), (2, 6)])
         assert(code_results == correct_results)
