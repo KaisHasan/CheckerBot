@@ -46,14 +46,26 @@ class FeaturesBasedSystem(AISystem):
         # set learning rate
         self._learning_rate = learning_rate
 
-    def generate_training_set(self, boards: list) -> tuple:
+    def generate_training_set(self, boards: list, colour: str) -> tuple:
         boards.reverse()
         m = len(boards)
         # shape = (m, 2)
         # first column is board
         # second column is V
         training_set = []
-        status = boards[0].get_status()
+        turn = len(boards)
+        status1 = boards[0].get_status(colour, turn)
+        enemy_colour = 'white' if colour == 'black' else 'black'
+        status2 = boards[0].get_status(enemy_colour, turn)
+        status = None
+        if status1 == 'lose':
+            status = 'lose'
+        elif status2 == 'lose':
+            status = 'win'
+        # if we reach here then no one is a winner
+        # first case is that it's a draw then status 1&2 must be 'draw'
+        # second case is that the game is still going then None is the value
+        status = status1
         if status == 'win':
             next_exmaple = (boards[0], 100)
             training_set.append(next_exmaple)
@@ -85,25 +97,41 @@ class FeaturesBasedSystem(AISystem):
         diff = v_tr - v_hat
         return np.dot(diff.T, diff)
 
-    def update_parameters(self, boards: list) -> None:
-        training_set, _ = self.generate_training_set(boards)
-        v_tr = training_set[:, 1]
-        n = len(self._features)
-        m = len(v_tr)
-        for i in range(m):
-            for j in range(n):
-                self._parameters[j] += self._learning_rate * (
-                        v_tr[i] - self.predict(boards[i])
-                    )
+    def update_parameters(self, boards: list, colour: str) -> None:
+        training_set, pred = self.generate_training_set(boards, colour)
+        # v_tr.shape = (m, )
+        v_tr = np.array(training_set[:, 1])
+        # v_hat.shape = (m, )
+        v_hat = np.array(pred)
+
+        # features matrix of shape (m, n)
+        # m examples
+        # n features for each example
+        X = self.get_all_features(boards)
+        self._parameters = self._parameters + self._learning_rate * (
+                                np.dot(X.T, v_tr - v_hat)
+                            )
         with open(self._name + '_' + 'parameters.npy', 'wb') as f:
             np.save(self._parameters, f)
 
-    def predict(self, board: Board) -> float:
-        # features vector { shape=(n, 1) }:
+    def get_features(self, board: Board) -> np.array:
         n = len(self._features)
         x = np.zeros((n, 1))
         for i in range(n):
             x[i] = self._features[i](board)
+        return x
+
+    def get_all_features(self, boards: list) -> np.array:
+        m = len(boards)
+        n = len(self._features)
+        x = np.zeros((m, n))
+        for i, board in enumerate(boards):
+            x[i, :] = self.get_features(board)
+        return x
+
+    def predict(self, board: Board) -> float:
+        # features vector { shape=(n, 1) }:
+        x = self.get_features(board)
         return np.squeeze(np.dot(self._parameters.T, x))
 
     def _f0_b(self, board: Board) -> float:
@@ -123,14 +151,12 @@ class FeaturesBasedSystem(AISystem):
 
     def _f5_number_of_pieces_threatened_by_white(self, board: Board) -> float:
         threatened = dict()
-        moves = Moves()
-        _ = moves.get_all_next_boards(board, 'white', threatened=threatened)
+        _ = Moves.get_all_next_boards(board, 'white', threatened=threatened)
         return len(threatened.keys())
 
     def _f6_number_of_pieces_threatened_by_black(self, board: Board) -> float:
         threatened = dict()
-        moves = Moves()
-        _ = moves.get_all_next_boards(board, 'black', threatened=threatened)
+        _ = Moves.get_all_next_boards(board, 'black', threatened=threatened)
         return len(threatened.keys())
 
 if __name__ == '__main__':

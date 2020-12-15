@@ -412,15 +412,21 @@ class Board:
         self._disks[disk.get_colour()].add(disk)
         self._disks_at[location] = disk
 
-    def get_status(self) -> int:
-        pass
+    def get_status(self, colour: str, turn: int) -> str:
+        boards = Moves.get_all_next_boards(self, colour)
+        if len(boards) == 0:
+            return 'lose'
+        if turn >= 80:
+            return 'draw'
+        return None  # the game is still going
+
 
 
 class Moves:
-    def is_valid_position(self, x: int, y: int) -> bool:
+    def is_valid_position(x: int, y: int) -> bool:
         return x >= 0 and x < 8 and y >= 0 and y < 8
 
-    def get_next_boards(self, board: Board, location: tuple, *,
+    def get_next_boards(board: Board, location: tuple, *,
                         next_locations: list = None,
                         threatened: dict = None) -> list:
         # frontier is a list of tuples.
@@ -438,7 +444,7 @@ class Moves:
                 for dx, dy in current_disk.get_directions():
                     next_x = current_location[0] + dx
                     next_y = current_location[1] + dy
-                    if not self.is_valid_position(next_x, next_y):
+                    if not Moves.is_valid_position(next_x, next_y):
                         continue
                     next_location = (next_x, next_y)
                     if current_board.get_disk_at(next_location) is None:
@@ -467,7 +473,7 @@ class Moves:
             for dx, dy in current_disk.get_directions():
                 next_x = current_location[0] + 2*dx
                 next_y = current_location[1] + 2*dy
-                if not self.is_valid_position(next_x, next_y):
+                if not Moves.is_valid_position(next_x, next_y):
                     continue
                 next_location = (next_x, next_y)
                 enemy_location = (current_location[0] + dx,
@@ -507,14 +513,14 @@ class Moves:
 
         return next_boards
 
-    def get_all_next_boards(self, board: Board, colour: str,
+    def get_all_next_boards(board: Board, colour: str,
                             threatened: dict = None) -> list:
         if colour not in ['white', 'black']:
             raise ValueError("colour must be either 'white', or 'black'!")
         next_boards = []
         for disk in board.get_disks(colour):
             next_boards.extend(
-                    self.get_next_boards(board, disk.get_location(),
+                    Moves.get_next_boards(board, disk.get_location(),
                                          threatened=threatened)
                 )
         return next_boards
@@ -567,7 +573,6 @@ if __name__ == '__main__':
             black_disks[i] = Disk(location=loc, colour='black')
         b = Board(set(white_disks), set(black_disks))
         
-        moves = Moves()
         d_moves = {
             (2, 0): [(4, 2)],
             (2, 4): [(3, 3)],
@@ -578,7 +583,7 @@ if __name__ == '__main__':
         }
         for k, v in d_moves.items():
             next_locations = []
-            _ = moves.get_next_boards(b, k, next_locations=next_locations)
+            _ = Moves.get_next_boards(b, k, next_locations=next_locations)
             code_results = sorted(next_locations)
             correct_results = sorted(v)
             assert(code_results == correct_results)
@@ -587,7 +592,7 @@ if __name__ == '__main__':
         d.promote_to_king()
         b.add_disk_at(d, (3, 5))
         next_locations = []
-        _ = moves.get_next_boards(b, (3, 5), next_locations=next_locations)
+        _ = Moves.get_next_boards(b, (3, 5), next_locations=next_locations)
         code_results = sorted(next_locations)
         correct_results = sorted([(4, 6), (5, 3), (7, 1), (7, 5), (5, 7), (2, 6)])
         assert(code_results == correct_results)
