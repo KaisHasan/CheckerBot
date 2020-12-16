@@ -7,7 +7,16 @@ Created on Sat Dec 12 20:28:10 2020
 
 
 class Disk:
-    """Represents Disks on the CheckerBoard."""
+    """Represents Disks on the CheckerBoard.
+
+    contains location, colour of the disk, and wheather it's a king,
+        and the directions to which it can move.
+    promotion to king is automatically done when the location has changed,
+        that's includes update directions to which it can move.
+    hashing, and equality test are supported.
+    copy method is supported.
+
+    """
 
     # Valid Directions of a non-king white Disk.
     _white_directions = ((1, 1), (1, -1))
@@ -39,6 +48,13 @@ class Disk:
             self._directions = self._black_directions
 
     def copy(self):
+        """Use it to copy an object of type Disk.
+
+        Returns
+        -------
+        Disk
+
+        """
         d = Disk(location=self._location, colour=self._colour)
         d._king = self._king
         d._directions = self._directions
@@ -183,7 +199,15 @@ class Disk:
 
 
 class Board:
-    """Represents the CheckerBoard."""
+    """Represents the CheckerBoard.
+
+    represent the CheckerBoard using two sets:
+        one for 'white', and another for 'black' pieces.
+    you can reach every piece of a given colour.
+    you can reach to a piece at a given location.
+    remove and add pieces are supported.
+
+    """
 
     def __init__(self, white_disks: set, black_disks: set) -> None:
         """
@@ -211,6 +235,16 @@ class Board:
         # location as key and disk at that location as value.
         self._disks_at = self.build_disks_at()
 
+    def copy(self):
+        """Use it to copy an object of type Disk.
+
+        Returns
+        -------
+        Board
+
+        """
+        return Board(self._disks['white'].copy(), self._disks['black'].copy())
+
     def get_number_of_kings(self, colour: str) -> int:
         """Use it to get the number of kings with a given colour.
 
@@ -234,7 +268,7 @@ class Board:
             raise ValueError("colour must be either 'white' or 'black'!")
         num = 0
         for disk in self._disks[colour]:
-            if disk.is_king() and disk.colour == colour:
+            if disk.is_king() and disk._colour == colour:
                 num += 1
 
         return num
@@ -421,14 +455,56 @@ class Board:
         return None  # the game is still going
 
 
-
 class Moves:
+    """Contains the moves functionality of the checker game."""
+
     def is_valid_position(x: int, y: int) -> bool:
+        """Test if a given location is inside the board or not.
+
+        Parameters
+        ----------
+        x : int
+            row number.
+        y : int
+            column number.
+
+        Returns
+        -------
+        bool
+            True if the given location is inside the board, False otherwise.
+
+        """
         return x >= 0 and x < 8 and y >= 0 and y < 8
 
     def get_next_boards(board: Board, location: tuple, *,
                         next_locations: list = None,
                         threatened: dict = None) -> list:
+        """Get all possible boards after the Disk at the given location move.
+
+        Parameters
+        ----------
+        board : Board
+            the current board (i.e before move).
+
+        location : tuple
+            location of the disk which we want to move it.
+
+        next_locations : list, optional, keyword-only
+            used to store all locations that the disk at
+            the given location can move to.
+            The default is None.
+
+        threatened : dict, optional, keyword-only
+            used to store the location of every threatened disk for the enemy.
+            locations are the keys.
+            The default is None.
+
+        Returns
+        -------
+        list
+            all possible boards after the Disk at the given location move.
+
+        """
         # frontier is a list of tuples.
         # tuple[0] is the board reached so far.
         # tuple[1] is the current location
@@ -437,61 +513,83 @@ class Moves:
         frontier.append((board, location, True))
         # list of all next boards
         next_boards = []
+
         while frontier:
+            # retrive information if the current state
             current_board, current_location, non_eat_move = frontier.pop()
+            # extract the disk which we want to move
             current_disk = current_board.get_disk_at(current_location)
+
             if non_eat_move is True:
                 for dx, dy in current_disk.get_directions():
+                    # calculate the next location row, and colomn number
                     next_x = current_location[0] + dx
                     next_y = current_location[1] + dy
+                    # test if the next location is inside the board
+                    # skip if not
                     if not Moves.is_valid_position(next_x, next_y):
                         continue
                     next_location = (next_x, next_y)
+
+                    # test if the next location is empty so we can move to it
+                    # skip if not
                     if current_board.get_disk_at(next_location) is None:
                         # very bad time complexity, need future improvement
                         # build a new board
-                        next_board = Board(white_disks = current_board.get_disks('white').copy()
-                                           , black_disks = current_board.get_disks('black').copy())
+                        next_board = current_board.copy()
                         # remove the disk from the old location
                         next_board.remove_disk_at(current_location)
                         # create a new disk to update the information in it
                         next_disk = current_disk.copy()
-                        next_disk.set_location(next_location)  # update the location.
+                        # update the location.
+                        next_disk.set_location(next_location)
                         # add the disk to the new location
                         next_board.add_disk_at(next_disk, next_location)
                         # add the board to the next_boards
                         next_boards.append(next_board)
-                        # add the next_location
+                        # add the next_location if we need it
                         if next_locations is not None:
                             next_locations.append(next_location)
-                        # don't add to the frontier if the disk have just promoted
+                        # don't add to frontier if the disk have just promoted
+                        # because a disk cannot use king moves until next turn.
                         if not current_disk.is_king() and next_disk.is_king():
                             continue
                         frontier.append((next_board, next_location, False))
 
             # eat moves:
             for dx, dy in current_disk.get_directions():
+                # calculate the next location row, and colomn number.
                 next_x = current_location[0] + 2*dx
                 next_y = current_location[1] + 2*dy
+                # test if the next location is inside the board
+                # skip if not
                 if not Moves.is_valid_position(next_x, next_y):
                     continue
                 next_location = (next_x, next_y)
+                # get calculate the location of the enemy disk we want to eat.
                 enemy_location = (current_location[0] + dx,
                                   current_location[1] + dy)
+
+                # test if the next location is empty so we can move to it
+                # skip if not
                 if current_board.get_disk_at(next_location) is not None:
                     continue
+                # test if the enemy location is contain a disk
+                # skip if not
                 if current_board.get_disk_at(enemy_location) is None:
                     continue
                 # enemy disk to be eaten
                 enemy_disk = current_board.get_disk_at(enemy_location)
+                # check if the disk at enemy location is really an enemy
+                # i.e not one of your pieces
                 if current_disk.is_enemy(enemy_disk) is False:
                     continue
+                # add the enemy disk to the threatened disks if we need that
                 if threatened is not None:
                     threatened[enemy_disk.get_location()] = 1
                 # very bad time complexity, need future improvement
                 # build a new board
-                next_board = Board(white_disks=current_board.get_disks('white').copy(),
-                                   black_disks=current_board.get_disks('black').copy())
+                next_board = current_board.copy()
 
                 # remove the disks from the old locations
                 next_board.remove_disk_at(current_location)
@@ -503,10 +601,11 @@ class Moves:
                 next_board.add_disk_at(next_disk, next_location)
                 # add the board to the next_boards
                 next_boards.append(next_board)
-                # add the next_location
+                # add the next_location if we need it
                 if next_locations is not None:
                     next_locations.append(next_location)
-                # don't add to the frontier if the disk have just promoted
+                # don't add to frontier if the disk have just promoted
+                # because a disk cannot use king moves until next turn.
                 if not current_disk.is_king() and next_disk.is_king():
                     continue
                 frontier.append((next_board, next_location, False))
@@ -515,9 +614,35 @@ class Moves:
 
     def get_all_next_boards(board: Board, colour: str,
                             threatened: dict = None) -> list:
+        """Get all possible boards after moving a disk.
+
+        Parameters
+        ----------
+        board : Board
+            the current board (i.e before move).
+        colour : str
+            the colour of the current player.
+        threatened : dict, optional
+            used to store the location of every threatened disk for the enemy.
+            locations are the keys.
+            The default is None.
+
+        Raises
+        ------
+        ValueError
+            if the colour is neither 'white', nor 'black'.
+
+        Returns
+        -------
+        list
+            all possible boards after moving a disk.
+
+        """
         if colour not in ['white', 'black']:
             raise ValueError("colour must be either 'white', or 'black'!")
+
         next_boards = []
+        # try to move each disk of the given player one at a time
         for disk in board.get_disks(colour):
             next_boards.extend(
                     Moves.get_next_boards(board, disk.get_location(),

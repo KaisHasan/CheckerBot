@@ -8,10 +8,47 @@ Created on Mon Dec 14 22:24:06 2020
 from Checker.Game import Board, Moves, Disk
 import numpy as np
 
+
 class AISystem:
-    def update_parameters(self, boards: list) -> None:
+    """Abstract class for an AI system.
+
+    Note: you must follow the documentation when implementing a system
+    that inherit this class to use it with an agent.
+
+    """
+
+    def update_parameters(self, boards: list, colour: str) -> None:
+        """Use it to update the parameters of the system.
+
+        Parameters
+        ----------
+        boards : list
+            a list of boards represent the board positions through the game.
+            type of each element must be of type Board.
+        colour : str
+            the colour that the system play with.
+            colour must be either 'white', or 'black'
+        Returns
+        -------
+        None
+
+        """
         pass
+
     def predict(self, board: Board) -> float:
+        """Use it to predict the fitness value for a given board.
+
+        Parameters
+        ----------
+        board : Board
+            the board we want to predict its fitness.
+
+        Returns
+        -------
+        float
+            the fitness value of the given board.
+
+        """
         pass
 
 
@@ -35,7 +72,7 @@ class FeaturesBasedSystem(AISystem):
         self._useSavedParameters = useSavedParameters
 
         # set parameters { shape = (n, 1) }:
-        self._parameters = np.random.rand(len(self._features), 1)
+        self._parameters = np.random.randn(len(self._features), 1) * 0.01
         if self._useSavedParameters is True:
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
@@ -171,3 +208,4 @@ if __name__ == '__main__':
         black_disks[i] = Disk(location=loc, colour='black')
     b = Board(set(white_disks), set(black_disks))
     print(f_system.predict(b))
+    print('Everything work.')
