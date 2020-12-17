@@ -5,6 +5,8 @@ Created on Sat Dec 12 20:28:10 2020
 @author: Kais
 """
 
+from Checker.AI.Agent import Agent
+from Checker.AI.BoardGenerators import initial_board_generator
 
 class Disk:
     """Represents Disks on the CheckerBoard.
@@ -649,6 +651,39 @@ class Moves:
                                          threatened=threatened)
                 )
         return next_boards
+
+
+def Train(agent: Agent, num_of_games: int) -> None:
+    """Train the agent by making it plays games agiant its self.
+
+    Parameters
+    ----------
+    agent : Agent
+        The agent to train.
+    num_of_games : int
+        number of training games.
+
+    Returns
+    -------
+    None
+
+    """
+    for i in range(num_of_games):
+        boards = []  # list of board positions through the game.
+        current_board = initial_board_generator()
+        boards.append(current_board)
+        current_colour = 'white'
+        for turn in range(1, 90):
+            if current_board.get_status(current_colour, turn) is not None:
+                if current_colour == 'white':
+                    boards.append(current_board)
+                break
+            agent.set_colour(current_colour)
+            current_board = agent.choose_board(current_board)
+            if current_colour == 'white':
+                boards.append(current_colour)
+            current_colour = 'white' if current_colour == 'black' else 'black'
+        agent.learn(boards)
 
 
 if __name__ == '__main__':

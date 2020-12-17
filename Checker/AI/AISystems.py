@@ -14,6 +14,7 @@ class AISystem:
 
     Note: you must follow the documentation when implementing a system
     that inherit this class to use it with an agent.
+    also don't forget to add it to systems dictionary in the end of file.
 
     """
 
@@ -195,6 +196,9 @@ class FeaturesBasedSystem(AISystem):
         threatened = dict()
         _ = Moves.get_all_next_boards(board, 'black', threatened=threatened)
         return len(threatened.keys())
+
+
+systems = {'FeaturesBasedSystem': FeaturesBasedSystem}
 
 if __name__ == '__main__':
     f_system = FeaturesBasedSystem('test', 0.01, True)
