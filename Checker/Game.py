@@ -5,8 +5,7 @@ Created on Sat Dec 12 20:28:10 2020
 @author: Kais
 """
 
-from Checker.AI.Agent import Agent
-from Checker.AI.BoardGenerators import initial_board_generator
+
 
 class Disk:
     """Represents Disks on the CheckerBoard.
@@ -20,10 +19,10 @@ class Disk:
 
     """
 
-    # Valid Directions of a non-king white Disk.
-    _white_directions = ((1, 1), (1, -1))
     # Valid Directions of a non-king black Disk.
-    _black_directions = ((-1, -1), (-1, 1))
+    _black_directions = ((1, 1), (1, -1))
+    # Valid Directions of a non-king white Disk.
+    _white_directions = ((-1, -1), (-1, 1))
 
     def __init__(self, *, location: tuple = None, colour: str = None) -> None:
         """
@@ -149,9 +148,9 @@ class Disk:
 
         """
         self._location = location
-        if self._colour == 'white' and self._location[0] == 7:
+        if self._colour == 'white' and self._location[0] == 0:
             self.promote_to_king()
-        if self._colour == 'black' and self._location[0] == 0:
+        if self._colour == 'black' and self._location[0] == 7:
             self.promote_to_king()
 
     def promote_to_king(self) -> None:
@@ -452,7 +451,7 @@ class Board:
         boards = Moves.get_all_next_boards(self, colour)
         if len(boards) == 0:
             return 'lose'
-        if turn >= 80:
+        if turn >= 250:
             return 'draw'
         return None  # the game is still going
 
@@ -554,9 +553,9 @@ class Moves:
                             next_locations.append(next_location)
                         # don't add to frontier if the disk have just promoted
                         # because a disk cannot use king moves until next turn.
-                        if not current_disk.is_king() and next_disk.is_king():
-                            continue
-                        frontier.append((next_board, next_location, False))
+                        #if not current_disk.is_king() and next_disk.is_king():
+                        #    continue
+                        # frontier.append((next_board, next_location, False))
 
             # eat moves:
             for dx, dy in current_disk.get_directions():
@@ -653,37 +652,7 @@ class Moves:
         return next_boards
 
 
-def Train(agent: Agent, num_of_games: int) -> None:
-    """Train the agent by making it plays games agiant its self.
 
-    Parameters
-    ----------
-    agent : Agent
-        The agent to train.
-    num_of_games : int
-        number of training games.
-
-    Returns
-    -------
-    None
-
-    """
-    for i in range(num_of_games):
-        boards = []  # list of board positions through the game.
-        current_board = initial_board_generator()
-        boards.append(current_board)
-        current_colour = 'white'
-        for turn in range(1, 90):
-            if current_board.get_status(current_colour, turn) is not None:
-                if current_colour == 'white':
-                    boards.append(current_board)
-                break
-            agent.set_colour(current_colour)
-            current_board = agent.choose_board(current_board)
-            if current_colour == 'white':
-                boards.append(current_colour)
-            current_colour = 'white' if current_colour == 'black' else 'black'
-        agent.learn(boards)
 
 
 if __name__ == '__main__':
@@ -728,18 +697,22 @@ if __name__ == '__main__':
         black_disks = [(3, 1), (4, 4), (5, 5), (6, 0),
                        (6, 2), (6, 4), (6, 6)]
         for i, loc in enumerate(white_disks.copy()):
+            white_disks[i] = (7 - loc[0], 7 - loc[1])
+        for i, loc in enumerate(black_disks.copy()):
+            black_disks[i] = (7 - loc[0], 7 - loc[1])
+        for i, loc in enumerate(white_disks.copy()):
             white_disks[i] = Disk(location=loc, colour='white')
         for i, loc in enumerate(black_disks.copy()):
             black_disks[i] = Disk(location=loc, colour='black')
         b = Board(set(white_disks), set(black_disks))
         
         d_moves = {
-            (2, 0): [(4, 2)],
-            (2, 4): [(3, 3)],
-            (0, 6): [],
-            (3, 5): [(4, 6), (5, 3), (7, 1), (7, 5)],
-            (3, 1): [(2, 2)],
-            (4, 4): [(3, 3), (2, 6)]
+            (5, 7): [(3, 5)],
+            (5, 3): [(4, 4)],
+            (7, 1): [],
+            (4, 2): [(3, 1), (2, 4), (0, 6), (0, 2)],
+            (4, 6): [(5, 5)],
+            (3, 3): [(4, 4), (5, 1)]
         }
         for k, v in d_moves.items():
             next_locations = []
@@ -747,14 +720,14 @@ if __name__ == '__main__':
             code_results = sorted(next_locations)
             correct_results = sorted(v)
             assert(code_results == correct_results)
-        b.remove_disk_at((3, 5))
-        d = Disk(location=(3, 5), colour='white')
+        b.remove_disk_at((4, 2))
+        d = Disk(location=(4, 2), colour='white')
         d.promote_to_king()
-        b.add_disk_at(d, (3, 5))
+        b.add_disk_at(d, (4, 2))
         next_locations = []
-        _ = Moves.get_next_boards(b, (3, 5), next_locations=next_locations)
+        _ = Moves.get_next_boards(b, (4, 2), next_locations=next_locations)
         code_results = sorted(next_locations)
-        correct_results = sorted([(4, 6), (5, 3), (7, 1), (7, 5), (5, 7), (2, 6)])
+        correct_results = sorted([(3, 1), (2, 4), (0, 6), (0, 2), (2, 0), (5, 1)])
         assert(code_results == correct_results)
 
     disk_and_board_test()

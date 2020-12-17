@@ -16,13 +16,13 @@ def initial_board_generator() -> Board:
     Board
 
     """
-    white_disks = [(0, 0), (0, 2), (0, 4), (0, 6),
+    black_disks = [(0, 0), (0, 2), (0, 4), (0, 6),
                    (1, 1), (1, 3), (1, 5), (1, 7),
                    (2, 0), (2, 2), (2, 4), (2, 6)]
-    black_disks = []
-    for location in white_disks:
+    white_disks = []
+    for location in black_disks:
         new_location = (7-location[0], 7-location[1])
-        black_disks.append(new_location)
+        white_disks.append(new_location)
     for i, loc in enumerate(white_disks.copy()):
         white_disks[i] = Disk(location=loc, colour='white')
     for i, loc in enumerate(black_disks.copy()):

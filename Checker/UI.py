@@ -67,7 +67,7 @@ class CLI(UI):
         loc = input('please enter the row and column numbers (0-index): ')
         if len(loc.split()) != 2:
             raise ValueError('you must enter exactly two numbers!')
-        location = tuple(loc.split())
+        location = tuple(int(x) for x in loc.split())
         if max(location) > 7 or min(location) < 0:
             raise ValueError('row, and column numbers must be in range[0, 7]')
         return location

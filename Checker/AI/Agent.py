@@ -9,6 +9,7 @@ from Checker.AI.AISystems import AISystem, FeaturesBasedSystem
 from Checker.Game import Board, Disk, Moves
 import numpy as np
 
+
 class Agent:
     def __init__(self, colour: str, system: AISystem) -> None:
         self.set_colour(colour)
@@ -33,8 +34,11 @@ class Agent:
         i = np.argmax(values)
         return boards[i]
 
-    def learn(self, boards: list) -> None:
-        self._system.update_parameters(boards)
+    def learn(self, boards: list, final_status: str) -> None:
+        self._system.update_parameters(boards, self._colour, final_status)
+
+    def get_system(self):
+        return self._system
 
 if __name__ == '__main__':
     system = FeaturesBasedSystem('test', learning_rate=0.01,

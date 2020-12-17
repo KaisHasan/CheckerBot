@@ -18,7 +18,8 @@ class AISystem:
 
     """
 
-    def update_parameters(self, boards: list, colour: str) -> None:
+    def update_parameters(self, boards: list, colour: str,
+                          final_status: str) -> None:
         """Use it to update the parameters of the system.
 
         Parameters
@@ -29,6 +30,9 @@ class AISystem:
         colour : str
             the colour that the system play with.
             colour must be either 'white', or 'black'
+        final_status: str
+            the final status of the game, i.e 'win', 'lose', 'draw'.
+
         Returns
         -------
         None
@@ -77,80 +81,98 @@ class FeaturesBasedSystem(AISystem):
         if self._useSavedParameters is True:
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
-                    self._parameters = np.load(f)
+                    self._parameters = np.load(f, allow_pickle=True)
             except IOError:
                 pass  # if no file exist just use the default values first
 
         # set learning rate
         self._learning_rate = learning_rate
 
-    def generate_training_set(self, boards: list, colour: str) -> tuple:
+    def generate_training_set(self, boards: list,
+                              colour: str, final_status: str) -> tuple:
         boards.reverse()
         m = len(boards)
         # shape = (m, 2)
         # first column is board
         # second column is V
         training_set = []
-        turn = len(boards)
-        status1 = boards[0].get_status(colour, turn)
-        enemy_colour = 'white' if colour == 'black' else 'black'
-        status2 = boards[0].get_status(enemy_colour, turn)
-        status = None
-        if status1 == 'lose':
-            status = 'lose'
-        elif status2 == 'lose':
-            status = 'win'
-        # if we reach here then no one is a winner
-        # first case is that it's a draw then status 1&2 must be 'draw'
-        # second case is that the game is still going then None is the value
-        status = status1
-        if status == 'win':
+        # list to store the predictions values
+        v_hat = []
+
+        if final_status == 'win':
             next_exmaple = (boards[0], 100)
             training_set.append(next_exmaple)
-        elif status == 'lose':
+        elif final_status == 'lose':
             next_exmaple = (boards[0], -100)
             training_set.append(next_exmaple)
-        elif status == 'draw':
+        elif final_status == 'draw':
             next_exmaple = (boards[0], 0)
             training_set.append(next_exmaple)
         else:
             raise ValueError("The game doesn't end yet to train on it")
 
-        # list to store the predictions values
-        v_hat = []
         for i in range(1, m):
-            v_hat[i-1] = self.predict(boards[i-1])
+            v_hat.append(self.predict(boards[i-1]))
             v_i = v_hat[i-1]
             next_exmaple = (boards[i], v_i)
             training_set.append(next_exmaple)
-        v_hat[-1] = self.predict(boards[-1])
+        v_hat.append(self.predict(boards[-1]))
         training_set.reverse()
         v_hat.reverse()
         return training_set, v_hat
 
-    def compute_error(self, boards: list) -> float:
-        training_set, pred = self.generate_training_set(boards)
-        v_tr = np.array(training_set[:, 1])
+    def compute_error(self, boards: list, colour: str,
+                      final_status: str) -> float:
+        training_set, pred = self.generate_training_set(boards, colour,
+                                                        final_status)
+        v_tr = np.array([x[1] for x in training_set])
         v_hat = np.array(pred)
         diff = v_tr - v_hat
         return np.dot(diff.T, diff)
 
-    def update_parameters(self, boards: list, colour: str) -> None:
-        training_set, pred = self.generate_training_set(boards, colour)
+    def update_parameters(self, boards: list, colour: str,
+                          final_status: str) -> None:
+        """Use it to update the parameters of the system.
+
+        Parameters
+        ----------
+        boards : list
+            a list of boards represent the board positions through the game.
+            type of each element must be of type Board.
+        colour : str
+            the colour that the system play with.
+            colour must be either 'white', or 'black'
+        final_status: str
+            the final status of the game, i.e 'win', 'lose', 'draw'.
+
+        Returns
+        -------
+        None
+
+        """
+        training_set, pred = self.generate_training_set(boards, colour,
+                                                        final_status)
         # v_tr.shape = (m, )
-        v_tr = np.array(training_set[:, 1])
+        v_tr = np.array([x[1] for x in training_set])
         # v_hat.shape = (m, )
-        v_hat = np.array(pred)
+        # v_hat = np.array(pred)
 
         # features matrix of shape (m, n)
         # m examples
         # n features for each example
         X = self.get_all_features(boards)
-        self._parameters = self._parameters + self._learning_rate * (
-                                np.dot(X.T, v_tr - v_hat)
-                            )
-        with open(self._name + '_' + 'parameters.npy', 'wb') as f:
-            np.save(self._parameters, f)
+        # temp = np.dot(X.T, v_tr - v_hat)
+        # temp = temp[..., np.newaxis]
+        m = X.shape[0]
+        n = X.shape[1]
+        # self._parameters = self._parameters + self._learning_rate * temp
+        for i in range(m):
+            for j in range(n):
+                v_hat = self.predict(training_set[i][0])
+                self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+        if self._useSavedParameters is True:
+            with open(self._name + '_' + 'parameters.npy', 'wb') as f:
+                np.save(f, self._parameters)
 
     def get_features(self, board: Board) -> np.array:
         n = len(self._features)
@@ -164,13 +186,13 @@ class FeaturesBasedSystem(AISystem):
         n = len(self._features)
         x = np.zeros((m, n))
         for i, board in enumerate(boards):
-            x[i, :] = self.get_features(board)
+            x[i, :] = self.get_features(board).ravel()
         return x
 
     def predict(self, board: Board) -> float:
         # features vector { shape=(n, 1) }:
         x = self.get_features(board)
-        return np.squeeze(np.dot(self._parameters.T, x))
+        return np.sum(np.dot(self._parameters.T, x))
 
     def _f0_b(self, board: Board) -> float:
         return 1
@@ -197,8 +219,6 @@ class FeaturesBasedSystem(AISystem):
         _ = Moves.get_all_next_boards(board, 'black', threatened=threatened)
         return len(threatened.keys())
 
-
-systems = {'FeaturesBasedSystem': FeaturesBasedSystem}
 
 if __name__ == '__main__':
     f_system = FeaturesBasedSystem('test', 0.01, True)
