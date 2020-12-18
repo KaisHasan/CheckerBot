@@ -210,6 +210,8 @@ class Board:
 
     """
 
+    draw_turn_number = 200
+
     def __init__(self, white_disks: set, black_disks: set) -> None:
         """
 
@@ -451,8 +453,12 @@ class Board:
         boards = Moves.get_all_next_boards(self, colour)
         if len(boards) == 0:
             return 'lose'
-        if turn >= 250:
+        if turn >= Board.draw_turn_number:
             return 'draw'
+        other_colour = 'white' if colour == 'black' else 'black'
+        boards = Moves.get_all_next_boards(self, other_colour)
+        if len(boards) == 0:
+            return 'win'
         return None  # the game is still going
 
 
@@ -657,20 +663,20 @@ class Moves:
 
 if __name__ == '__main__':
     def disk_and_board_test():
-        d1 = Disk(location=(0, 0), colour='white')
-        d2 = Disk(location=(0, 0), colour='white')
+        d1 = Disk(location=(7, 7), colour='white')
+        d2 = Disk(location=(7, 7), colour='white')
         assert(d1 == d2)
         assert(hash(d1) == hash(d2))
-        d1.set_location((7, 1))
+        d1.set_location((0, 6))
         assert(d1 != d2)
         assert(hash(d1) != hash(d2))
         assert(d1.is_king() is True)
         d2.set_colour('black')
         assert(d1.is_enemy(d2) is True)
-        d1 = Disk(location=(1, 1), colour='white')
-        d2 = Disk(location=(2, 1), colour='white')
-        d3 = Disk(location=(3, 1), colour='black')
-        d4 = Disk(location=(3, 3), colour='black')
+        d1 = Disk(location=(6, 6), colour='white')
+        d2 = Disk(location=(5, 6), colour='white')
+        d3 = Disk(location=(4, 6), colour='black')
+        d4 = Disk(location=(4, 4), colour='black')
         white_disks = set([d1, d2])
         black_disks = set([d3, d4])
         b = Board(white_disks, black_disks)
@@ -681,13 +687,13 @@ if __name__ == '__main__':
         assert(b.get_number_of_kings('black') == 0)
         b2 = Board(white_disks=b.get_disks('white').copy(),
                    black_disks=b.get_disks('black').copy())
-        b.remove_disk_at((1, 1))
+        b.remove_disk_at((6, 6))
         assert(b2 is not b)
         assert(b.get_number_of_disks('white') == 1)
-        b.remove_disk_at((3, 3))
+        b.remove_disk_at((4, 4))
         assert(b.get_number_of_disks('black') == 1)
         assert(b.is_empty('white') is False)
-        b.remove_disk_at((2, 1))
+        b.remove_disk_at((5, 6))
         assert(b.get_number_of_disks('white') == 0)
         assert(b.is_empty('white') is True)
 

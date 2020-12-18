@@ -119,6 +119,7 @@ class FeaturesBasedSystem(AISystem):
         v_hat.append(self.predict(boards[-1]))
         training_set.reverse()
         v_hat.reverse()
+        boards.reverse()
         return training_set, v_hat
 
     def compute_error(self, boards: list, colour: str,
@@ -128,7 +129,8 @@ class FeaturesBasedSystem(AISystem):
         v_tr = np.array([x[1] for x in training_set])
         v_hat = np.array(pred)
         diff = v_tr - v_hat
-        return np.dot(diff.T, diff)
+        m = v_tr.shape[0]
+        return (2./m)*np.dot(diff.T, diff)
 
     def update_parameters(self, boards: list, colour: str,
                           final_status: str) -> None:
@@ -155,7 +157,7 @@ class FeaturesBasedSystem(AISystem):
         # v_tr.shape = (m, )
         v_tr = np.array([x[1] for x in training_set])
         # v_hat.shape = (m, )
-        # v_hat = np.array(pred)
+        v_hat = np.array(pred)
 
         # features matrix of shape (m, n)
         # m examples
@@ -165,11 +167,17 @@ class FeaturesBasedSystem(AISystem):
         # temp = temp[..., np.newaxis]
         m = X.shape[0]
         n = X.shape[1]
-        # self._parameters = self._parameters + self._learning_rate * temp
-        for i in range(m):
-            for j in range(n):
-                v_hat = self.predict(training_set[i][0])
-                self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+        # for loop version:
+        #for i in range(m):
+        #    for j in range(n):
+        #        v_hat = self.predict(training_set[i][0])
+        #        self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+
+        # vectorized version:
+        self._parameters = self._parameters + (self._learning_rate/m)*(
+                                                    np.dot(X.T, v_tr - v_hat)
+                                                )
+
         if self._useSavedParameters is True:
             with open(self._name + '_' + 'parameters.npy', 'wb') as f:
                 np.save(f, self._parameters)

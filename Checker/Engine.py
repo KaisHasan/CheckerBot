@@ -38,11 +38,12 @@ def Train(agent: Agent, num_of_games: int, output: bool) -> list:
     for i in range(num_of_games):
         boards = []  # list of Agent board positions through the game.
         current_board = initial_board_generator()
-        boards.append(current_board)
         current_colour = 'white'
         final_status = None
-        for turn in range(1, 250 + 1):
-            status = current_board.get_status(current_colour, turn)
+        for turn in range(1, Board.draw_turn_number + 1):
+            if current_colour == 'white':
+                boards.append(current_board.copy())
+            status = current_board.get_status('white', turn)
             if output is True:
                 print(f'turn: {turn}')
                 cli.show(current_board)
@@ -51,11 +52,9 @@ def Train(agent: Agent, num_of_games: int, output: bool) -> list:
                 break
             agent.set_colour(current_colour)
             current_board = agent.choose_board(current_board)
-            if current_colour == 'white':
-                boards.append(current_board)
             current_colour = 'white' if current_colour == 'black' else 'black'
         agent.set_colour('white')
-        agent.learn(boards, final_status)
+        agent.learn(boards.copy(), final_status)
         costs.append(agent.get_system().compute_error(boards, 'white',
                                                       final_status))
         results.append(d[final_status])
