@@ -95,6 +95,9 @@ class FeaturesBasedSystem(AISystem):
                                 *self._add_features.copy())
         return s
 
+    def get_name(self) -> str:
+        return self._name
+
     def generate_training_set(self, boards: list,
                               colour: str, final_status: str) -> tuple:
         boards.reverse()

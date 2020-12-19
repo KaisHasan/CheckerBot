@@ -44,6 +44,9 @@ class Agent:
     def get_system(self):
         return self._system
 
+    def get_name(self) -> str:
+        return self._system.get_name()
+
 if __name__ == '__main__':
     system = FeaturesBasedSystem('test', learning_rate=0.01,
                                  useSavedParameters=True)

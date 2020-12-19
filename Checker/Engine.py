@@ -130,20 +130,20 @@ def Play(agent: Agent):
         return None
     cli = CLI()
     current_board = initial_board_generator()
-    # colour = {1:'white', 0:'black'}
+    colour = {0:'white', 1:'black'}
     final_status = None
     for turn in range(1, 200):
-        status = current_board.get_status('white', turn)
+        status = current_board.get_status(agent.get_colour(), turn)
         print(f'turn: {turn}')
         cli.show(current_board)
-        if turn % 2 == 1:
+        if colour[turn % 2] == agent.get_colour():
             print('computer move')
         else:
             print('human move')
         if status is not None:
             final_status = status
             break
-        if turn % 2 == 1:
+        if colour[turn % 2] == agent.get_colour():
             current_board = agent.choose_board(current_board)
         else:
             while True:
