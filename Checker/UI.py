@@ -84,7 +84,12 @@ class CLI(UI):
         None
 
         """
+        print('  ', end='')
         for i in range(8):
+            print(f' {i} ', end='')
+        print()
+        for i in range(8):
+            print(f'{i} ', end='')
             for j in range(8):
                 disk = board.get_disk_at((i, j))
                 if disk is None:

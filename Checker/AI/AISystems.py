@@ -70,6 +70,7 @@ class FeaturesBasedSystem(AISystem):
         self._features.append(self._f5_number_of_pieces_threatened_by_white)
         self._features.append(self._f6_number_of_pieces_threatened_by_black)
         self._features.extend(features)
+        self._add_features = list(features)  # used when we want to copy
 
         # set name
         self._name = name
@@ -87,6 +88,12 @@ class FeaturesBasedSystem(AISystem):
 
         # set learning rate
         self._learning_rate = learning_rate
+
+    def copy(self):
+        s = FeaturesBasedSystem('copy_'+self._name, self._learning_rate,
+                                self._useSavedParameters,
+                                *self._add_features.copy())
+        return s
 
     def generate_training_set(self, boards: list,
                               colour: str, final_status: str) -> tuple:
@@ -168,10 +175,12 @@ class FeaturesBasedSystem(AISystem):
         m = X.shape[0]
         n = X.shape[1]
         # for loop version:
-        #for i in range(m):
-        #    for j in range(n):
-        #        v_hat = self.predict(training_set[i][0])
-        #        self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+# =============================================================================
+#         for i in range(m):
+#             for j in range(n):
+#                 v_hat = self.predict(training_set[i][0])
+#                 self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+# =============================================================================
 
         # vectorized version:
         self._parameters = self._parameters + (self._learning_rate/m)*(

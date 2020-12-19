@@ -15,6 +15,10 @@ class Agent:
         self.set_colour(colour)
         self._system =  system
 
+    def copy(self):
+        a = Agent(self._colour, self._system.copy())
+        return a
+
     def get_colour(self) -> str:
         return self._colour
 

@@ -210,7 +210,7 @@ class Board:
 
     """
 
-    draw_turn_number = 200
+    draw_turn_number = 100
 
     def __init__(self, white_disks: set, black_disks: set) -> None:
         """
@@ -450,15 +450,21 @@ class Board:
         self._disks_at[location] = disk
 
     def get_status(self, colour: str, turn: int) -> str:
-        boards = Moves.get_all_next_boards(self, colour)
-        if len(boards) == 0:
+        boards_me = Moves.get_all_next_boards(self, colour)
+        n_me = len(boards_me)
+        if n_me == 0:
             return 'lose'
-        if turn >= Board.draw_turn_number:
-            return 'draw'
-        other_colour = 'white' if colour == 'black' else 'black'
-        boards = Moves.get_all_next_boards(self, other_colour)
-        if len(boards) == 0:
+        enemy_colour = 'white' if colour == 'black' else 'black'
+        boards_enemy = Moves.get_all_next_boards(self, enemy_colour)
+        n_enemy = len(boards_enemy)
+        if n_enemy == 0:
             return 'win'
+        n_me = len(self.get_disks(colour))
+        n_enemy = len(self.get_disks(enemy_colour))
+        if turn >= Board.draw_turn_number:
+            if n_me == n_enemy:
+                return 'draw'
+            return 'win' if n_me > n_enemy else 'lose'
         return None  # the game is still going
 
 
@@ -527,42 +533,6 @@ class Moves:
             # extract the disk which we want to move
             current_disk = current_board.get_disk_at(current_location)
 
-            if non_eat_move is True:
-                for dx, dy in current_disk.get_directions():
-                    # calculate the next location row, and colomn number
-                    next_x = current_location[0] + dx
-                    next_y = current_location[1] + dy
-                    # test if the next location is inside the board
-                    # skip if not
-                    if not Moves.is_valid_position(next_x, next_y):
-                        continue
-                    next_location = (next_x, next_y)
-
-                    # test if the next location is empty so we can move to it
-                    # skip if not
-                    if current_board.get_disk_at(next_location) is None:
-                        # very bad time complexity, need future improvement
-                        # build a new board
-                        next_board = current_board.copy()
-                        # remove the disk from the old location
-                        next_board.remove_disk_at(current_location)
-                        # create a new disk to update the information in it
-                        next_disk = current_disk.copy()
-                        # update the location.
-                        next_disk.set_location(next_location)
-                        # add the disk to the new location
-                        next_board.add_disk_at(next_disk, next_location)
-                        # add the board to the next_boards
-                        next_boards.append(next_board)
-                        # add the next_location if we need it
-                        if next_locations is not None:
-                            next_locations.append(next_location)
-                        # don't add to frontier if the disk have just promoted
-                        # because a disk cannot use king moves until next turn.
-                        #if not current_disk.is_king() and next_disk.is_king():
-                        #    continue
-                        # frontier.append((next_board, next_location, False))
-
             # eat moves:
             for dx, dy in current_disk.get_directions():
                 # calculate the next location row, and colomn number.
@@ -616,6 +586,41 @@ class Moves:
                 if not current_disk.is_king() and next_disk.is_king():
                     continue
                 frontier.append((next_board, next_location, False))
+            if non_eat_move is True:
+                for dx, dy in current_disk.get_directions():
+                    # calculate the next location row, and colomn number
+                    next_x = current_location[0] + dx
+                    next_y = current_location[1] + dy
+                    # test if the next location is inside the board
+                    # skip if not
+                    if not Moves.is_valid_position(next_x, next_y):
+                        continue
+                    next_location = (next_x, next_y)
+
+                    # test if the next location is empty so we can move to it
+                    # skip if not
+                    if current_board.get_disk_at(next_location) is None:
+                        # very bad time complexity, need future improvement
+                        # build a new board
+                        next_board = current_board.copy()
+                        # remove the disk from the old location
+                        next_board.remove_disk_at(current_location)
+                        # create a new disk to update the information in it
+                        next_disk = current_disk.copy()
+                        # update the location.
+                        next_disk.set_location(next_location)
+                        # add the disk to the new location
+                        next_board.add_disk_at(next_disk, next_location)
+                        # add the board to the next_boards
+                        next_boards.append(next_board)
+                        # add the next_location if we need it
+                        if next_locations is not None:
+                            next_locations.append(next_location)
+                        # don't add to frontier if the disk have just promoted
+                        # because a disk cannot use king moves until next turn.
+                        # if not current_disk.is_king() and next_disk.is_king():
+                        #    continue
+                        # frontier.append((next_board, next_location, False))
 
         return next_boards
 
@@ -711,7 +716,6 @@ if __name__ == '__main__':
         for i, loc in enumerate(black_disks.copy()):
             black_disks[i] = Disk(location=loc, colour='black')
         b = Board(set(white_disks), set(black_disks))
-        
         d_moves = {
             (5, 7): [(3, 5)],
             (5, 3): [(4, 4)],
@@ -738,4 +742,5 @@ if __name__ == '__main__':
 
     disk_and_board_test()
     moves_tests()
+
     print('Everything work.')
