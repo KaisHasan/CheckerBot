@@ -11,7 +11,7 @@ from Checker.UI import CLI
 from Checker.Game import Moves, Board
 
 
-def Train(agent: Agent, num_of_games: int, output: bool) -> list:
+def train(agent: Agent, num_of_games: int, output: bool) -> tuple:
     """Train the agent by making it plays games agiant its self.
 
     Parameters
@@ -25,103 +25,96 @@ def Train(agent: Agent, num_of_games: int, output: bool) -> list:
 
     Returns
     -------
-    list
-        cost for each game
+    tuple
+        first element, list:
+            i-th element is the error after updating parameters using i-th game
+        second element, list:
+            i-th element is the result for on the i-th game.
 
     """
     costs = []
-    cli = CLI()
-    # -1 is lose
-    #  1 is win
-    #  0 is draw
+    cli = CLI()  # object to use the console interface if output is True.
+    # dictionary for convert status into numbers.
     d = {'win': 1, 'lose': -1, 'draw': 0}
-    colour = {1:'white', 0:'black'}
-    original_colour = agent.get_colour()
-    results = []
+    # dictionary for knowing the colour of the current player
+    # 0 is the first player
+    # 1 is the second player
+    colour = {0: 'white', 1: 'black'}
+    # used to restore the agent colour after training end
+    # thats because we are updating evaluation based on white position.
+    previous_colour = agent.get_colour()
+    results = []  # store the results of the games.
+
     for i in range(num_of_games):
-        boards = []  # list of Agent board positions through the game.
-        current_board = initial_board_generator()
-        final_status = None
+        boards = []  # list of white board positions through the game.
+        current_board = initial_board_generator()  # generate the initial board
+        # 2-tuple
+        # first element is the status (i.e 'win', 'lose', or draw).
+        # second element is the colour of the player with the final status.
+        final_status = (None, None)
+
         for turn in range(1, Board.draw_turn_number + 1):
+            # alternate the roles of the same agent by setting its colour
+            # to the colour of the player who should move in the current turn
             agent.set_colour(colour[turn % 2])
-            if colour[turn % 2] == original_colour:
+            # store the boards where its white turn.
+            if colour[turn % 2] == 'white':
                 boards.append(current_board.copy())
-            status = current_board.get_status(original_colour, turn)
+            # get status of the game, 'None' indicates that game is still going
+            status = current_board.get_status(colour[turn % 2], turn)
+
+            # print the turn number and the board if we need them.
             if output is True:
                 print(f'turn: {turn}')
                 cli.show(current_board)
+
+            # if the game ends set the right values to final_status
+            # then exit the game
             if status is not None:
-                final_status = status
+                final_status = (status, colour[turn % 2])
                 break
+            # get the next board
+            # this done by letting the agent choose the move.
             current_board = agent.choose_board(current_board)
-        agent.learn(boards.copy(), final_status)
-        costs.append(agent.get_system().compute_error(boards,
-                                                      agent.get_colour(),
-                                                      final_status))
-        results.append(d[final_status])
+
+        # get the final status for white
+        if final_status[1] == 'black' and final_status[0] != 'draw':
+            final_status = ('win' if final_status[0] == 'lose' else 'lose',
+                            final_status[1])
+        # let the agent learn using the boards positions through the game.
+        agent.learn(boards.copy(), final_status[0])
+        # add the cost after updating.
+        costs.append(agent.get_system().compute_error(boards, final_status[0]))
+        # add the result of the game for white player
+        results.append(d[final_status[0]])
+
+        if (i+1) % 100 == 0:
+            print(f'{i+1} games finished unitl now!')
+    # reset the colour of the agent
+    agent.set_colour(previous_colour)
     return costs, results
 
 
-def Train_with_other_agent(agent: Agent, num_of_games: int, output: bool,
-          other_agent = None) -> list:
-    """Train the agent by making it plays games agiant its self.
+def play(agent: Agent, train: bool = False) -> None:
+    """Start a game between a human user and the agent.
+
+    Note: white is always the first player but the agent can play with
+    any valid colour (i.e 'white', or 'black') and the human use will
+    take the other one.
 
     Parameters
     ----------
     agent : Agent
-        The agent to train.
-    num_of_games : int
-        number of training games.
-    output: bool
-        indicates if you want to print the game or not.
+        the agent you want to play with.
+    train : bool, optional
+        indicates if you want to train the agent using the game you played.
+        The default is False.
 
     Returns
     -------
-    list
-        cost for each game
+    None
 
     """
-    if other_agent is None:
-        other_agent = agent.copy()
-        enemy_colour = 'black'
-        if enemy_colour == agent.get_colour():
-            enemy_colour = 'white'
-        other_agent.set_colour(enemy_colour)
-
-    costs = []
-    cli = CLI()
-    # -1 is lose
-    #  1 is win
-    #  0 is draw
-    d = {'win': 1, 'lose': -1, 'draw': 0}
-    colour = {1:'white', 0:'black'}
-    results = []
-    for i in range(num_of_games):
-        boards = []  # list of Agent board positions through the game.
-        current_board = initial_board_generator()
-        final_status = None
-        for turn in range(1, Board.draw_turn_number + 1):
-            if colour[turn%2] == agent.get_colour():
-                boards.append(current_board.copy())
-            status = current_board.get_status(agent.get_colour(), turn)
-            if output is True:
-                print(f'turn: {turn}')
-                cli.show(current_board)
-            if status is not None:
-                final_status = status
-                break
-            if colour[turn%2] == agent.get_colour():
-                current_board = agent.choose_board(current_board)
-            else:
-                current_board = other_agent.choose_board(current_board)
-        agent.learn(boards.copy(), final_status)
-        costs.append(agent.get_system().compute_error(boards,
-                                                      agent.get_colour(),
-                                                      final_status))
-        results.append(d[final_status])
-    return costs, results, other_agent
-
-def Play(agent: Agent):
     def get_board(board, loc1, loc2):
         boards = Moves.get_next_boards(board, loc1)
         for b in boards:
@@ -130,18 +123,21 @@ def Play(agent: Agent):
         return None
     cli = CLI()
     current_board = initial_board_generator()
-    colour = {0:'white', 1:'black'}
-    final_status = None
+    colour = {1: 'white', 0: 'black'}
+    final_status = (None, None)
+    boards = []
     for turn in range(1, 200):
-        status = current_board.get_status(agent.get_colour(), turn)
+        status = current_board.get_status(colour[turn % 2], turn)
         print(f'turn: {turn}')
         cli.show(current_board)
+        if colour[turn % 2] == 'white':
+            boards.append(current_board.copy())
         if colour[turn % 2] == agent.get_colour():
             print('computer move')
         else:
             print('human move')
         if status is not None:
-            final_status = status
+            final_status = (status, colour[turn % 2])
             break
         if colour[turn % 2] == agent.get_colour():
             current_board = agent.choose_board(current_board)
@@ -163,27 +159,63 @@ def Play(agent: Agent):
                 except ValueError as err:
                     print(err)
             current_board = get_board(current_board, loc1, loc2)
-    print(f'game is {final_status} for white!')
+    temp_status = final_status[0]
+    if final_status[1] != 'white':
+        temp_status = 'win' if temp_status == 'lose' else 'lose'
+    if train is True:
+        agent.learn(boards, temp_status)
+        print('cost:', agent.get_system().compute_error(boards,
+                                                        final_status[0]))
+    print(f'game is {final_status[0]} for {final_status[1]}!')
 
 
 def play_with_other_agent(agent1: Agent, agent2: Agent,
                           output: bool = False) -> str:
+    """Let two agents play together.
+
+    Parameters
+    ----------
+    agent1 : Agent
+        the first agent.
+    agent2 : Agent
+        the seocnd agent.
+    output : bool, optional
+        indicates if you want to print the game or not. The default is False.
+
+    Returns
+    -------
+    str
+        the status of the first agent on the game.
+        or "the two agents have the same disk's colour"
+                            if the colours are the same.
+
+    """
     if agent1.get_colour() == agent2.get_colour():
         return "the two agents have the same disk's colour"
-    final_status = None
-    colour = {1:'white', 0:'black'}
+    # 2-tuple
+    # first element is the status (i.e 'win', 'lose', or draw).
+    # second element is the colour of the player with the final status.
+    final_status = (None, None)
+    colour = {1: 'white', 0: 'black'}
     cli = CLI()
     current_board = initial_board_generator()
     for turn in range(1, Board.draw_turn_number + 1):
-        status = current_board.get_status(agent1.get_colour(), turn)
+        status = current_board.get_status(colour[turn % 2], turn)
         if output is True:
             print(f'turn: {turn}')
             cli.show(current_board)
+
+        # if the game ends set the right values to final_status
+        # then exit the game
         if status is not None:
-            final_status = status
+            final_status = (status, colour[turn % 2])
             break
         if colour[turn % 2] == agent1.get_colour():
             current_board = agent1.choose_board(current_board)
         else:
             current_board = agent2.choose_board(current_board)
-    return final_status
+    # get the final status for the first player
+    if final_status[1] != agent1.get_colour() and final_status[0] != 'draw':
+        final_status = ('win' if final_status[0] == 'lose' else 'lose',
+                        final_status[1])
+    return final_status[0]

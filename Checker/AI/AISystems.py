@@ -18,8 +18,7 @@ class AISystem:
 
     """
 
-    def update_parameters(self, boards: list, colour: str,
-                          final_status: str) -> None:
+    def update_parameters(self, boards: list, final_status: str) -> None:
         """Use it to update the parameters of the system.
 
         Parameters
@@ -27,9 +26,6 @@ class AISystem:
         boards : list
             a list of boards represent the board positions through the game.
             type of each element must be of type Board.
-        colour : str
-            the colour that the system play with.
-            colour must be either 'white', or 'black'
         final_status: str
             the final status of the game, i.e 'win', 'lose', 'draw'.
 
@@ -98,8 +94,7 @@ class FeaturesBasedSystem(AISystem):
     def get_name(self) -> str:
         return self._name
 
-    def generate_training_set(self, boards: list,
-                              colour: str, final_status: str) -> tuple:
+    def generate_training_set(self, boards: list, final_status: str) -> tuple:
         boards.reverse()
         m = len(boards)
         # shape = (m, 2)
@@ -110,10 +105,10 @@ class FeaturesBasedSystem(AISystem):
         v_hat = []
 
         if final_status == 'win':
-            next_exmaple = (boards[0], 100)
+            next_exmaple = (boards[0], 1)
             training_set.append(next_exmaple)
         elif final_status == 'lose':
-            next_exmaple = (boards[0], -100)
+            next_exmaple = (boards[0], -1)
             training_set.append(next_exmaple)
         elif final_status == 'draw':
             next_exmaple = (boards[0], 0)
@@ -132,18 +127,15 @@ class FeaturesBasedSystem(AISystem):
         boards.reverse()
         return training_set, v_hat
 
-    def compute_error(self, boards: list, colour: str,
-                      final_status: str) -> float:
-        training_set, pred = self.generate_training_set(boards, colour,
-                                                        final_status)
+    def compute_error(self, boards: list, final_status: str) -> float:
+        training_set, pred = self.generate_training_set(boards, final_status)
         v_tr = np.array([x[1] for x in training_set])
         v_hat = np.array(pred)
         diff = v_tr - v_hat
         m = v_tr.shape[0]
-        return (2./m)*np.dot(diff.T, diff)
+        return (1./(2.*m))*np.dot(diff.T, diff)
 
-    def update_parameters(self, boards: list, colour: str,
-                          final_status: str) -> None:
+    def update_parameters(self, boards: list, final_status: str) -> None:
         """Use it to update the parameters of the system.
 
         Parameters
@@ -162,8 +154,7 @@ class FeaturesBasedSystem(AISystem):
         None
 
         """
-        training_set, pred = self.generate_training_set(boards, colour,
-                                                        final_status)
+        training_set, pred = self.generate_training_set(boards, final_status)
         # v_tr.shape = (m, )
         v_tr = np.array([x[1] for x in training_set])
         # v_hat.shape = (m, )
@@ -173,16 +164,18 @@ class FeaturesBasedSystem(AISystem):
         # m examples
         # n features for each example
         X = self.get_all_features(boards)
+        assert(X.shape == (len(training_set), len(self._features)))
         # temp = np.dot(X.T, v_tr - v_hat)
         # temp = temp[..., np.newaxis]
         m = X.shape[0]
         n = X.shape[1]
         # for loop version:
 # =============================================================================
-#         for i in range(m):
-#             for j in range(n):
-#                 v_hat = self.predict(training_set[i][0])
-#                 self._parameters[j] += self._learning_rate * (v_tr[i] - v_hat)
+#         for i in reversed(range(m)):
+#             v_hat = self.predict(training_set[i][0])
+#             self._parameters = self._parameters - (
+#                     self._learning_rate * X[i, :].reshape(n, 1) * (v_hat - v_tr[i])
+#                 )
 # =============================================================================
 
         # vectorized version:
@@ -231,12 +224,12 @@ class FeaturesBasedSystem(AISystem):
 
     def _f5_number_of_pieces_threatened_by_white(self, board: Board) -> float:
         threatened = dict()
-        _ = Moves.get_all_next_boards(board, 'white', threatened=threatened)
+        _ = Moves.get_all_next_boards(board, 'white', threatened)
         return len(threatened.keys())
 
     def _f6_number_of_pieces_threatened_by_black(self, board: Board) -> float:
         threatened = dict()
-        _ = Moves.get_all_next_boards(board, 'black', threatened=threatened)
+        _ = Moves.get_all_next_boards(board, 'black', threatened)
         return len(threatened.keys())
 
 

@@ -7,7 +7,7 @@ Created on Thu Dec 17 23:04:20 2020
 
 from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
-from Checker.Engine import Train, Play, Train_with_other_agent, play_with_other_agent
+from Checker.Engine import train, play, play_with_other_agent
 from Checker.Game import Board
 import matplotlib.pyplot as plt
 import numpy as np
@@ -96,15 +96,16 @@ features = [
     ]
 
 
+
+
+
 if __name__ == '__main__':
 
-    def train_agent(agent: Agent, num_of_games: int):
+    def train_agent(agent: Agent, num_of_games: int, output: bool= False):
 
-        costs, results = Train(agent=agent,
-                               num_of_games=num_of_games,
-                               output=False)
-        # Play(agent)
-        # print(f'{i+1}-th training:')
+        costs, results = Train(agent,
+                               num_of_games,
+                               output)
         wins = results.count(1)
         loses = results.count(-1)
         draws = results.count(0)
@@ -113,10 +114,10 @@ if __name__ == '__main__':
         print(f'loses: {loses}')
         print(f'draws: {draws}')
         print('##################################')
-        print(costs[-1])
-        print_iter = 1
-        plt.plot(np.arange(0, num_of_games, print_iter),
-                 costs[::print_iter], 'k')
+        print(f'cost: {costs[-1]}')
+        print_iter = num_of_games // 10
+        plt.plot(np.arange(0, num_of_games, print_iter + 1),
+                 costs[::print_iter+1], 'k')
         plt.show()
 
     def get_agent(name: str, learning_rate: float,
@@ -127,47 +128,50 @@ if __name__ == '__main__':
         agent = Agent(colour='white', system=system)
         return agent
 
-    my_agent_features = features.copy()
-    my_agent = get_agent('my_agent', 0.03, my_agent_features)
+    def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
+        d = {'win': 1, 'lose': -1, 'draw': 0}
+        print('######################################################')
+        print(f'status for {agent1.get_name()}')
+        print(f'{agent1.get_name()}: "white", {agent2.get_name()}: "black"')
+        print('######################################################')
+        agent1.set_colour('white')
+        agent2.set_colour('black')
+        results = []
+        for i in range(num_of_games):
+            result = play_with_other_agent(agent1, agent2, False)
+            results.append(d[result])
+        wins = results.count(1)
+        loses = results.count(-1)
+        draws = results.count(0)
+        print(f'wins: {wins}')
+        print(f'loses: {loses}')
+        print(f'draws: {draws}')
+        print('######################################################')
+        print(f'status for {agent1.get_name()}')
+        print(f'{agent1.get_name()}: "black", {agent2.get_name()}: "white"')
+        print('######################################################')
+        agent1.set_colour('black')
+        agent2.set_colour('white')
+        results = []
+        for i in range(num_of_games):
+            result = play_with_other_agent(agent1, agent2)
+            results.append(d[result])
+        wins = results.count(1)
+        loses = results.count(-1)
+        draws = results.count(0)
+        print(f'wins: {wins}')
+        print(f'loses: {loses}')
+        print(f'draws: {draws}')
 
-    my_agent1_features = features.copy()
-    my_agent1 = get_agent('my_agent1', 0.03, my_agent1_features)
+    agent1_features = features.copy()
+    agent1 = get_agent('agent1', 0.0001, agent1_features)
 
-    train_agent(my_agent1, 10)
+    # train_agent(agent1, 1000)
+    # print(agent1.get_system()._parameters)
+    tom_agent = get_agent('tom_agent', 0.001, [])
 
-    num_of_games = 10
-    d = {'win': 1, 'lose': -1, 'draw': 0}
-    print('######################################################')
-    print('status when: my_agent is "white", my_agent1 is "black"')
-    print('######################################################')
-    my_agent1.set_colour('black')
-    results = []
-    for i in range(num_of_games):
-        result = play_with_other_agent(my_agent, my_agent1, False)
-        results.append(d[result])
-    wins = results.count(1)
-    loses = results.count(-1)
-    draws = results.count(0)
-    print(f'wins: {wins}')
-    print(f'loses: {loses}')
-    print(f'draws: {draws}')
-    print('######################################################')
-    print('status when: my_agent is "black", my_agent1 is "white"')
-    print('######################################################')
-    my_agent.set_colour('black')
-    my_agent1.set_colour('white')
-    results = []
-    for i in range(num_of_games):
-        result = play_with_other_agent(my_agent, my_agent1)
-        results.append(d[result])
-    wins = results.count(1)
-    loses = results.count(-1)
-    draws = results.count(0)
-    print(f'wins: {wins}')
-    print(f'loses: {loses}')
-    print(f'draws: {draws}')
-# =============================================================================
-#     my_agent = get_agent('my_agent', 0.03)
-#     my_agent.set_colour('black')
-#     Play(my_agent)
-# =============================================================================
+    # train_agent(tom_agent, 100)
+
+    test_agents(agent1, tom_agent, 100)
+
+    # Play(tom_agent)

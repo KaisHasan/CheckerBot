@@ -11,6 +11,13 @@ import numpy as np
 
 
 class Agent:
+    """AI Agent.
+
+    This agent use one of the AISystems.
+    you can let the agent choose between a list of boards using the method
+    choose_board.
+    """
+
     def __init__(self, colour: str, system: AISystem) -> None:
         self.set_colour(colour)
         self._system =  system
@@ -35,11 +42,14 @@ class Agent:
         # get the fitness of every board
         values = list(map(self.get_fitness, boards))
         # get the id of the best board
-        i = np.argmax(values)
+        if self._colour == 'black':
+            i = np.argmin(values)
+        else:
+            i = np.argmax(values)
         return boards[i]
 
     def learn(self, boards: list, final_status: str) -> None:
-        self._system.update_parameters(boards, self._colour, final_status)
+        self._system.update_parameters(boards, final_status)
 
     def get_system(self):
         return self._system

@@ -462,9 +462,11 @@ class Board:
         n_me = len(self.get_disks(colour))
         n_enemy = len(self.get_disks(enemy_colour))
         if turn >= Board.draw_turn_number:
-            if n_me == n_enemy:
-                return 'draw'
-            return 'win' if n_me > n_enemy else 'lose'
+# =============================================================================
+#             if n_enemy != n_me:
+#                 return 'win' if n_me > n_enemy else 'lose'
+# =============================================================================
+            return 'draw'
         return None  # the game is still going
 
 
@@ -740,7 +742,37 @@ if __name__ == '__main__':
         correct_results = sorted([(3, 1), (2, 4), (0, 6), (0, 2), (2, 0), (5, 1)])
         assert(code_results == correct_results)
 
+    def threat_test():
+        white_disks = [(0, 4), (0, 6), (1, 5), (1, 7),
+                       (2, 0), (2, 4), (3, 5)]
+        black_disks = [(3, 1), (4, 4), (5, 5), (6, 0),
+                       (6, 2), (6, 4), (6, 6)]
+        for i, loc in enumerate(white_disks.copy()):
+            white_disks[i] = (7 - loc[0], 7 - loc[1])
+        for i, loc in enumerate(black_disks.copy()):
+            black_disks[i] = (7 - loc[0], 7 - loc[1])
+        for i, loc in enumerate(white_disks.copy()):
+            white_disks[i] = Disk(location=loc, colour='white')
+        for i, loc in enumerate(black_disks.copy()):
+            black_disks[i] = Disk(location=loc, colour='black')
+        b = Board(set(white_disks), set(black_disks))
+        threatened = dict()
+        _ = Moves.get_all_next_boards(b, 'white', threatened)
+        correct_results = [
+                (4, 6), (3, 3), (1, 3), (1, 5)
+            ]
+        assert(sorted(correct_results) == sorted(threatened.keys()))
+        assert(len(threatened.keys()) == 4)
+        threatened = dict()
+        _ = Moves.get_all_next_boards(b, 'black', threatened)
+        correct_results = [
+                (4, 2)
+            ]
+        assert(sorted(correct_results) == sorted(threatened.keys()))
+        assert(len(threatened.keys()) == 1)
+
     disk_and_board_test()
     moves_tests()
+    threat_test()
 
     print('Everything work.')
