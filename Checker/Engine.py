@@ -9,6 +9,8 @@ from Checker.AI.Agent import Agent
 from Checker.AI.BoardGenerators import initial_board_generator
 from Checker.UI import CLI
 from Checker.Game import Moves, Board
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def train(agent: Agent, num_of_games: int, output: bool) -> tuple:
@@ -92,6 +94,19 @@ def train(agent: Agent, num_of_games: int, output: bool) -> tuple:
             print(f'{i+1} games finished unitl now!')
     # reset the colour of the agent
     agent.set_colour(previous_colour)
+    wins = results.count(1)
+    loses = results.count(-1)
+    draws = results.count(0)
+    print(f'training results of agent {agent.get_name()}')
+    print(f'wins: {wins}')
+    print(f'loses: {loses}')
+    print(f'draws: {draws}')
+    print('##################################')
+    print(f'cost: {costs[-1]}')
+    print_iter = num_of_games // 10
+    plt.plot(np.arange(0, num_of_games, print_iter + 1),
+             costs[::print_iter+1], 'k')
+    plt.show()
     return costs, results
 
 
@@ -219,3 +234,38 @@ def play_with_other_agent(agent1: Agent, agent2: Agent,
         final_status = ('win' if final_status[0] == 'lose' else 'lose',
                         final_status[1])
     return final_status[0]
+
+def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
+    d = {'win': 1, 'lose': -1, 'draw': 0}
+    print('######################################################')
+    print(f'status for {agent1.get_name()}')
+    print(f'{agent1.get_name()}: "white", {agent2.get_name()}: "black"')
+    print('######################################################')
+    agent1.set_colour('white')
+    agent2.set_colour('black')
+    results = []
+    for i in range(num_of_games):
+        result = play_with_other_agent(agent1, agent2, False)
+        results.append(d[result])
+    wins = results.count(1)
+    loses = results.count(-1)
+    draws = results.count(0)
+    print(f'wins: {wins}')
+    print(f'loses: {loses}')
+    print(f'draws: {draws}')
+    print('######################################################')
+    print(f'status for {agent1.get_name()}')
+    print(f'{agent1.get_name()}: "black", {agent2.get_name()}: "white"')
+    print('######################################################')
+    agent1.set_colour('black')
+    agent2.set_colour('white')
+    results = []
+    for i in range(num_of_games):
+        result = play_with_other_agent(agent1, agent2)
+        results.append(d[result])
+    wins = results.count(1)
+    loses = results.count(-1)
+    draws = results.count(0)
+    print(f'wins: {wins}')
+    print(f'loses: {loses}')
+    print(f'draws: {draws}')

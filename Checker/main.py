@@ -9,8 +9,6 @@ from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
 from Checker.Engine import train, play, play_with_other_agent
 from Checker.Game import Board
-import matplotlib.pyplot as plt
-import numpy as np
 
 
 def num_on_the_left_white(board: Board) -> float:
@@ -84,6 +82,7 @@ def num_on_the_up_black(board: Board) -> float:
             num += 1
     return num
 
+
 features = [
         num_on_the_left_white,
         num_on_the_left_black,
@@ -96,29 +95,7 @@ features = [
     ]
 
 
-
-
-
 if __name__ == '__main__':
-
-    def train_agent(agent: Agent, num_of_games: int, output: bool = False):
-
-        costs, results = train(agent,
-                               num_of_games,
-                               output)
-        wins = results.count(1)
-        loses = results.count(-1)
-        draws = results.count(0)
-        print(f'training results of agent {agent.get_name()}')
-        print(f'wins: {wins}')
-        print(f'loses: {loses}')
-        print(f'draws: {draws}')
-        print('##################################')
-        print(f'cost: {costs[-1]}')
-        print_iter = num_of_games // 10
-        plt.plot(np.arange(0, num_of_games, print_iter + 1),
-                 costs[::print_iter+1], 'k')
-        plt.show()
 
     def get_agent(name: str, learning_rate: float,
                   features: list,
@@ -128,50 +105,34 @@ if __name__ == '__main__':
         agent = Agent(colour='white', system=system)
         return agent
 
-    def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
-        d = {'win': 1, 'lose': -1, 'draw': 0}
-        print('######################################################')
-        print(f'status for {agent1.get_name()}')
-        print(f'{agent1.get_name()}: "white", {agent2.get_name()}: "black"')
-        print('######################################################')
-        agent1.set_colour('white')
-        agent2.set_colour('black')
-        results = []
-        for i in range(num_of_games):
-            result = play_with_other_agent(agent1, agent2, False)
-            results.append(d[result])
-        wins = results.count(1)
-        loses = results.count(-1)
-        draws = results.count(0)
-        print(f'wins: {wins}')
-        print(f'loses: {loses}')
-        print(f'draws: {draws}')
-        print('######################################################')
-        print(f'status for {agent1.get_name()}')
-        print(f'{agent1.get_name()}: "black", {agent2.get_name()}: "white"')
-        print('######################################################')
-        agent1.set_colour('black')
-        agent2.set_colour('white')
-        results = []
-        for i in range(num_of_games):
-            result = play_with_other_agent(agent1, agent2)
-            results.append(d[result])
-        wins = results.count(1)
-        loses = results.count(-1)
-        draws = results.count(0)
-        print(f'wins: {wins}')
-        print(f'loses: {loses}')
-        print(f'draws: {draws}')
-
-    agent1_features = features.copy()
-    agent1 = get_agent('agent1', 0.0001, agent1_features)
-
-    # train_agent(agent1, 1000)
-    # print(agent1.get_system()._parameters)
-    tom_agent = get_agent('tom_agent', 0.001, [])
-
-    # train_agent(tom_agent, 100)
-
-    test_agents(agent1, tom_agent, 100)
-
-    # Play(tom_agent)
+    print('Welcome to the Checker Game')
+    print('please note that white is always plays first')
+    print('agents available are:')
+    print('agent1')
+    print('tom_agent')
+    while True:
+        agent_name = input('enter the name of the agent to play with it:')
+        agent_name = agent_name.lower()
+        if agent_name in ['agent1', 'tom_agent']:
+            break
+        else:
+            print('please enter a valid agent name!')
+    print('colours available for you are: white, black')
+    while True:
+        colour = input('enter the colour you want to play with:')
+        colour = colour.lower()
+        if colour in ['white', 'black']:
+            break
+        else:
+            print('please enter a valid colour!')
+    agent_colour = 'white' if colour == 'black' else 'black'
+    print(f'agent colour: {agent_colour}')
+    if agent_name == 'agent1':
+        agent1_features = features.copy()
+        agent1 = get_agent('agent1', 0.0001, agent1_features)
+        agent1.set_colour(agent_colour)
+        play(agent1)
+    else:
+        tom_agent = get_agent('tom_agent', 0.001, [])
+        tom_agent.set_colour(agent_colour)
+        play(tom_agent)
