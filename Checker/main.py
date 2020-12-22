@@ -21,10 +21,14 @@ if __name__ == '__main__':
         agent = Agent(colour='white', system=system)
         return agent
 
-    tom_agent = get_agent('tom_agent1', 0.001, [])
-    train(tom_agent, 1000)
-    import sys
-    sys.exit()
+# =============================================================================
+#     ag = get_agent('tom_agent', 0.001, [])
+#     train(ag, 10)
+# 
+#     import sys
+#     sys.exit()
+# =============================================================================
+
     print('Welcome to the Checker Game')
     print('please note that white is always plays first')
 

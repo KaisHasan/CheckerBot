@@ -87,7 +87,7 @@ class Agent:
             raise ValueError("colour must be either 'white', or 'black'!")
         self._colour = colour
 
-    def get_fitness(self, board: Board) -> float:
+    def get_fitness(self, boards: list) -> float:
         """Get the fitness value of a given board.
 
         this function will calculate how good the board is, using
@@ -95,8 +95,8 @@ class Agent:
 
         Parameters
         ----------
-        board : Board
-            the board we want to calculate its fitness.
+        boards : list
+            list of boards we want to calculate their fitnesses.
 
         Returns
         -------
@@ -104,7 +104,7 @@ class Agent:
             how good the board is (i.e the fitness value of the board).
 
         """
-        return self._system.predict(board)
+        return self._system.predict(boards)
 
     def choose_board(self, board: Board) -> Board:
         """Choose the best board by applying the best move on the given board.
@@ -124,7 +124,7 @@ class Agent:
         # generate all possible boards
         boards = Moves.get_all_next_boards(board, self._colour)
         # get the fitness of every board
-        values = list(map(self.get_fitness, boards))
+        values = self.get_fitness(boards)
         # get the id of the best board
         # because our evaluation function is predict how good
         # a board is for white, then when we play as 'black'
@@ -195,7 +195,7 @@ if __name__ == '__main__':
     for i, loc in enumerate(black_disks.copy()):
         black_disks[i] = Disk(location=loc, colour='black')
     b1 = Board(set(white_disks), set(black_disks))
-    _ = a.get_fitness(b1)
+    _ = a.get_fitness([b1])
 
     b = a.choose_board(b1)
     print('Everything work.')

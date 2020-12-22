@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def train(agent: Agent, num_of_games: int, output: bool) -> tuple:
+def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
     """Train the agent by making it plays games agiant its self.
 
     Parameters
@@ -22,8 +22,9 @@ def train(agent: Agent, num_of_games: int, output: bool) -> tuple:
         The agent to train.
     num_of_games : int
         number of training games.
-    output: bool
+    output: bool, optional
         indicates if you want to print the game or not.
+        the default is False.
 
     Returns
     -------

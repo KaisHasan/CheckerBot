@@ -35,18 +35,18 @@ class AISystem:
         """
         pass
 
-    def predict(self, board: Board) -> float:
+    def predict(self, boards: list) -> float:
         """Use it to predict the fitness value for a given board.
 
         Parameters
         ----------
-        board : Board
-            the board we want to predict its fitness.
+        boards : list
+            list of boards we want to predict their fitnesses.
 
         Returns
         -------
-        float
-            the fitness value of the given board.
+        np.array
+            the fitnesses values of the given boards.
 
         """
         pass
@@ -203,43 +203,30 @@ class FeaturesBasedSystem(AISystem):
         Returns
         -------
         tuple
-            first element is a list of the training examples.
-                it's a list of 2-tuple.
-                so the first column contains the boards.
-                the second column contains the training values of each board.
+            numpy array contains the training values of each board.
             second element is a list of the predicted values of the boards.
 
         """
-        boards.reverse()
         m = len(boards)
-        # shape = (m, 2)
-        # first column is board
-        # second column is V
-        training_set = []
-        # list to store the predictions values
-        v_hat = []
+        # shape = (m, )
+        training_set = np.zeros((m, 1))
+        assert(training_set.shape == (m, 1))
+        # numpy array to store the predictions values
+        v_hat = self.predict(boards)
+        assert(v_hat.shape == (m, 1))
 
         if final_status == 'win':
-            next_exmaple = (boards[0], 1)
-            training_set.append(next_exmaple)
+            training_set[-1] = 1
         elif final_status == 'lose':
-            next_exmaple = (boards[0], -1)
-            training_set.append(next_exmaple)
+            training_set[-1] = -1
         elif final_status == 'draw':
-            next_exmaple = (boards[0], 0)
-            training_set.append(next_exmaple)
+            training_set[-1] = 0
         else:
             raise ValueError("The game doesn't end yet to train on it")
 
-        for i in range(1, m):
-            v_hat.append(self.predict(boards[i-1]))
-            v_i = v_hat[i-1]
-            next_exmaple = (boards[i], v_i)
-            training_set.append(next_exmaple)
-        v_hat.append(self.predict(boards[-1]))
-        training_set.reverse()
-        v_hat.reverse()
-        boards.reverse()
+        for i in range(m - 1):
+            training_set[i] = v_hat[i+1]
+
         return training_set, v_hat
 
     def compute_error(self, boards: list, final_status: str) -> float:
@@ -260,12 +247,11 @@ class FeaturesBasedSystem(AISystem):
             the error in the prediction of our system.
 
         """
-        training_set, pred = self.generate_training_set(boards, final_status)
-        v_tr = np.array([x[1] for x in training_set])
-        v_hat = np.array(pred)
+        v_tr, v_hat = self.generate_training_set(boards, final_status)
+
         diff = v_tr - v_hat
         m = v_tr.shape[0]
-        return (1./(2.*m))*np.dot(diff.T, diff)
+        return (1./(2.*m))*np.sum(np.dot(diff.T, diff))
 
     def update_parameters(self, boards: list, final_status: str) -> None:
         """Use it to update the parameters of the system.
@@ -283,19 +269,16 @@ class FeaturesBasedSystem(AISystem):
         None
 
         """
-        training_set, pred = self.generate_training_set(boards, final_status)
-        # v_tr.shape = (m, )
-        v_tr = np.array([x[1] for x in training_set])
-        # v_hat.shape = (m, )
-        v_hat = np.array(pred)
+        v_tr, v_hat = self.generate_training_set(boards, final_status)
+        m = v_tr.shape[0]
+        assert(v_tr.shape == (m, 1))
+        assert(v_hat.shape == (m, 1))
 
         # features matrix of shape (m, n)
         # m examples
         # n features for each example
         X = self.get_all_features(boards)
-        assert(X.shape == (len(training_set), len(self._features)))
-
-        m = X.shape[0]
+        assert(X.shape == (m, len(self._features)))
 
         # vectorized version:
         self._parameters = self._parameters + (self._learning_rate/m)*(
@@ -349,7 +332,7 @@ class FeaturesBasedSystem(AISystem):
             x[i, :] = self.get_features(board).ravel()
         return x
 
-    def predict(self, board: Board) -> float:
+    def predict(self, boards: list) -> np.array:
         """Use it to predict the fitness value for a given board.
 
         the predict value is a linear combination of the
@@ -357,18 +340,19 @@ class FeaturesBasedSystem(AISystem):
 
         Parameters
         ----------
-        board : Board
-            the board we want to predict its fitness.
+        boards : list
+            list of boards we want to predict their fitnesses.
 
         Returns
         -------
-        float
-            the fitness value of the given board.
+        np.array
+            shape = (number of boards, 1)
+            the fitnesses values of the given boards.
 
         """
-        # features vector { shape=(n, 1) }:
-        x = self.get_features(board)
-        return np.sum(np.dot(self._parameters.T, x))
+        # features matrix { shape=(m, n) }:
+        X = self.get_all_features(boards)
+        return np.dot(X, self._parameters)
 
     def _f0_b(self, board: Board) -> float:
         return 1
@@ -407,5 +391,5 @@ if __name__ == '__main__':
     for i, loc in enumerate(black_disks.copy()):
         black_disks[i] = Disk(location=loc, colour='black')
     b = Board(set(white_disks), set(black_disks))
-    print(f_system.predict(b))
+    print(f_system.predict([b]))
     print('Everything work.')
