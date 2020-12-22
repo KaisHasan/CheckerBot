@@ -6,7 +6,6 @@ Created on Sat Dec 12 20:28:10 2020
 """
 
 
-
 class Disk:
     """Represents Disks on the CheckerBoard.
 
@@ -25,13 +24,13 @@ class Disk:
     _white_directions = ((-1, -1), (-1, 1))
 
     def __init__(self, *, location: tuple = None, colour: str = None) -> None:
-        """
+        """Initialize the Disk.
 
         Parameters
         ----------
-        tuple : location, optional
+        location : tuple, optional
             Location of the Disk in the Board. The default is None.
-        str : colour, optional
+        colour : str, optional
             Colour of the Disk ('white' or 'black'). The default is None.
 
         Returns
@@ -49,11 +48,12 @@ class Disk:
             self._directions = self._black_directions
 
     def copy(self):
-        """Use it to copy an object of type Disk.
+        """Use it to copy the calling disk.
 
         Returns
         -------
         Disk
+            a copy of the calling disk.
 
         """
         d = Disk(location=self._location, colour=self._colour)
@@ -81,7 +81,7 @@ class Disk:
         None
 
         """
-        if type(colour) != type(' '):
+        if not isinstance(colour, str):
             raise TypeError('colour must be of type str!')
         if colour.lower() in ['white', 'black']:
             self._colour = colour.lower()
@@ -89,18 +89,18 @@ class Disk:
             raise ValueError('Colour must be either "white" or "black"!')
 
     def get_colour(self) -> str:
-        """Use it to get the colour of the disk.
+        """Get the colour of the disk.
 
         Returns
         -------
         str
-            The colour of the disk
+            The colour of the disk.
 
         """
         return self._colour
 
     def get_directions(self) -> tuple:
-        """Use it to get the valid move's directions of the disk.
+        """Get the valid move's directions of the disk.
 
         Note that this will not take the board borders into account.
 
@@ -113,7 +113,7 @@ class Disk:
         return self._directions
 
     def get_location(self) -> tuple:
-        """Use it to get the current location of the Disk on the board.
+        """Get the current location of the Disk on the board.
 
         Returns
         -------
@@ -136,6 +136,9 @@ class Disk:
 
     def set_location(self, location: tuple) -> None:
         """Change the current location of the disk.
+
+        Note: this will promote the disk to a king automatically
+                if the new location indicates that the disk must promoted.
 
         Parameters
         ----------
@@ -167,7 +170,7 @@ class Disk:
         self._directions = *self._white_directions, *self._black_directions
 
     def is_enemy(self, other) -> bool:
-        """Use it to find if a given disk is enemy with the current disk.
+        """Find if the given disk is enemy with the calling disk.
 
         Parameters
         ----------
@@ -176,15 +179,16 @@ class Disk:
         Raises
         ------
         TypeError
-            if the type of other is not Disk.
+            if the type of the parameter is not Disk.
 
         Returns
         -------
         bool
-            True if other have same colour as current disk, False otherwise.
+            True if the given disk have the same colour as the
+            calling disk, False otherwise.
 
         """
-        if not isinstance(other, type(self)):
+        if not isinstance(other, Disk):
             raise TypeError('Argument must be of type Disk')
         return self._colour != other.get_colour()
 
@@ -192,7 +196,7 @@ class Disk:
         return hash((self._location, self._king, self._colour))
 
     def __eq__(self, other):
-        if not isinstance(other, type(self)):
+        if not isinstance(other, Disk):
             return False
         return self._colour == other.get_colour() and \
             self._king == other.is_king() and \
@@ -204,16 +208,16 @@ class Board:
 
     represent the CheckerBoard using two sets:
         one for 'white', and another for 'black' pieces.
-    you can reach every piece of a given colour.
+    you can reach to every piece of a given colour.
     you can reach to a piece at a given location.
     remove and add pieces are supported.
 
     """
 
-    draw_turn_number = 100
+    draw_turn_number = 100  # max. number of game's turns before declare draw.
 
     def __init__(self, white_disks: set, black_disks: set) -> None:
-        """
+        """Initialize the Board.
 
         Parameters
         ----------
@@ -236,20 +240,21 @@ class Board:
 
         # Initialize dictionary with:
         # location as key and disk at that location as value.
-        self._disks_at = self.build_disks_at()
+        self._disks_at = self._build_disks_at()
 
     def copy(self):
-        """Use it to copy an object of type Disk.
+        """Use it to copy the calling board.
 
         Returns
         -------
         Board
+            a copy of the calling board.
 
         """
         return Board(self._disks['white'].copy(), self._disks['black'].copy())
 
     def get_number_of_kings(self, colour: str) -> int:
-        """Use it to get the number of kings with a given colour.
+        """Get the number of kings with a given colour.
 
         Parameters
         ----------
@@ -277,7 +282,7 @@ class Board:
         return num
 
     def get_number_of_disks(self, colour: str = None) -> int:
-        """Use it to get the number of disks with a given colour.
+        """Get the number of disks with a given colour.
 
         if colour = None is used then it will return the number of all disks.
 
@@ -298,7 +303,8 @@ class Board:
 
         """
         if colour is None:
-            return self.get_number_of_disks('white') + self.get_number_of_disks('black')
+            return (self.get_number_of_disks('white') +
+                    self.get_number_of_disks('black'))
         elif colour == 'white':
             return len(self._disks['white'])
         elif colour == 'black':
@@ -307,15 +313,7 @@ class Board:
             raise ValueError("""colour must be
                              "black", or "white", or "None"! """)
 
-    def build_disks_at(self) -> dict:
-        """Build a dictionary.
-
-        Returns
-        -------
-        dict
-            location as key, and disk at that location as value.
-
-        """
+    def _build_disks_at(self) -> dict:
         d = dict()
         # Get the white disks.
         for disk in self._disks['white']:
@@ -330,7 +328,7 @@ class Board:
         return d
 
     def get_disk_at(self, location: tuple) -> Disk:
-        """Use it to get the disk given the location.
+        """Get the disk at the given location.
 
         Parameters
         ----------
@@ -402,7 +400,7 @@ class Board:
                              "black", or "white", or "None"! """)
 
     def remove_disk_at(self, location: tuple) -> None:
-        """Use it to remove a disk with a given location from the board.
+        """Remove a disk with a given location from the board.
 
         Parameters
         ----------
@@ -426,11 +424,12 @@ class Board:
         del self._disks_at[location]
 
     def add_disk_at(self, disk: Disk, location: tuple) -> None:
-        """Use it to add a disk in a location
+        """Add a disk in the given location.
 
         Parameters
         ----------
         disk : Disk
+            a disk that we want to add.
         location : tuple
             location on the board where you want to add the given disk.
 
@@ -450,6 +449,27 @@ class Board:
         self._disks_at[location] = disk
 
     def get_status(self, colour: str, turn: int) -> str:
+        """Get the status of the game for the player with the given colour.
+
+        the status is 'win', 'lose', or 'draw' if the game ends,
+        otherwise None is returned.
+
+        Parameters
+        ----------
+        colour : str
+            the colour of the pieces controlled by the player that we want
+            to know if he is at 'win', 'lose', 'draw' status, or if the
+            game is not end yet.
+        turn : int
+            the current turn's number.
+
+        Returns
+        -------
+        str
+            the status is 'win', 'lose', or 'draw' if the game ends,
+            otherwise None is returned..
+
+        """
         boards_me = Moves.get_all_next_boards(self, colour)
         n_me = len(boards_me)
         if n_me == 0:
@@ -462,10 +482,6 @@ class Board:
         n_me = len(self.get_disks(colour))
         n_enemy = len(self.get_disks(enemy_colour))
         if turn >= Board.draw_turn_number:
-# =============================================================================
-#             if n_enemy != n_me:
-#                 return 'win' if n_me > n_enemy else 'lose'
-# =============================================================================
             return 'draw'
         return None  # the game is still going
 
@@ -663,9 +679,6 @@ class Moves:
                                          threatened=threatened)
                 )
         return next_boards
-
-
-
 
 
 if __name__ == '__main__':

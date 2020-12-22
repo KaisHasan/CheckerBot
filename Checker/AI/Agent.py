@@ -19,29 +19,117 @@ class Agent:
     """
 
     def __init__(self, colour: str, system: AISystem) -> None:
+        """Initialize the Agent.
+
+        Parameters
+        ----------
+        colour : str
+            the colour of the pieces controlled by the agent.
+            must be either 'black', or 'white'.
+        system : AISystem
+            the system used by the agent to play and learn.
+
+        Returns
+        -------
+        None
+
+        """
         self.set_colour(colour)
-        self._system =  system
+        self._system = system
 
     def copy(self):
+        """Use it to copy the agent.
+
+        this will copy the system and the colour of the agent.
+        for information about what happened when a system is copied see
+        documentation of the copy method in AISystems.
+
+        Returns
+        -------
+        Agent
+            a copy of calling agent.
+
+        """
         a = Agent(self._colour, self._system.copy())
         return a
 
     def get_colour(self) -> str:
+        """Get the colour of the agent.
+
+        Returns
+        -------
+        str
+            the colour of the agent (i.e 'black', or 'white').
+
+        """
         return self._colour
 
     def set_colour(self, colour: str) -> None:
+        """Set the colour of the agent.
+
+        Parameters
+        ----------
+        colour : str
+            the colour of the pieces controlled by the agent.
+            must be either 'black', or 'white'.
+
+        Raises
+        ------
+        ValueError
+            if the colour is not valid (i.e it's neither 'black', nor 'white').
+
+        Returns
+        -------
+        None
+
+        """
         if colour not in ['white', 'black']:
             raise ValueError("colour must be either 'white', or 'black'!")
         self._colour = colour
 
     def get_fitness(self, board: Board) -> float:
+        """Get the fitness value of a given board.
+
+        this function will calculate how good the board is, using
+        agent' system specific prediction.
+
+        Parameters
+        ----------
+        board : Board
+            the board we want to calculate its fitness.
+
+        Returns
+        -------
+        float
+            how good the board is (i.e the fitness value of the board).
+
+        """
         return self._system.predict(board)
 
     def choose_board(self, board: Board) -> Board:
+        """Choose the best board by applying the best move on the given board.
+
+        Parameters
+        ----------
+        board : Board
+            the current board.
+
+        Returns
+        -------
+        Board
+            the new board, which is the result of applying
+            the best valid move on the given board.
+
+        """
+        # generate all possible boards
         boards = Moves.get_all_next_boards(board, self._colour)
         # get the fitness of every board
         values = list(map(self.get_fitness, boards))
         # get the id of the best board
+        # because our evaluation function is predict how good
+        # a board is for white, then when we play as 'black'
+        # we must takes the minimum to put the 'white' in the worst
+        # possible scenario.
         if self._colour == 'black':
             i = np.argmin(values)
         else:
@@ -49,13 +137,48 @@ class Agent:
         return boards[i]
 
     def learn(self, boards: list, final_status: str) -> None:
+        """Let the agent learn using the hisory of a game.
+
+        the agent will use its system to learn.
+
+        Parameters
+        ----------
+        boards : list
+            the list of all boards through the game
+            where it's white turn.
+        final_status : str
+            the final status of the white player.
+            must be 'win', 'lose', or 'draw'.
+
+        Returns
+        -------
+        None
+
+        """
         self._system.update_parameters(boards, final_status)
 
-    def get_system(self):
+    def get_system(self) -> AISystem:
+        """Get the system used by the agent.
+
+        Returns
+        -------
+        AISystem
+            the system used by the agent.
+
+        """
         return self._system
 
     def get_name(self) -> str:
+        """Get the name of the system used by the agent.
+
+        Returns
+        -------
+        str
+            the name of the system used by the agent.
+
+        """
         return self._system.get_name()
+
 
 if __name__ == '__main__':
     system = FeaturesBasedSystem('test', learning_rate=0.01,

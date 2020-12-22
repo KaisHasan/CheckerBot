@@ -101,9 +101,9 @@ features = [
 
 if __name__ == '__main__':
 
-    def train_agent(agent: Agent, num_of_games: int, output: bool= False):
+    def train_agent(agent: Agent, num_of_games: int, output: bool = False):
 
-        costs, results = Train(agent,
+        costs, results = train(agent,
                                num_of_games,
                                output)
         wins = results.count(1)

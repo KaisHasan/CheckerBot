@@ -14,7 +14,6 @@ class AISystem:
 
     Note: you must follow the documentation when implementing a system
     that inherit this class to use it with an agent.
-    also don't forget to add it to systems dictionary in the end of file.
 
     """
 
@@ -52,10 +51,82 @@ class AISystem:
         """
         pass
 
+    def copy(self):
+        """Use it to copy the system.
+
+        Note: you must give the new system a name different from the name
+        of the original system, otherwise logical errors will happen.
+
+        Returns
+        -------
+        AISystem
+            a copy of the calling system.
+
+        """
+        pass
+
+    def get_name(self) -> str:
+        """Get the name of the system.
+
+        Returns
+        -------
+        str
+            the name of the system.
+
+        """
+        pass
+
+    def compute_error(self, boards: list, final_status: str) -> float:
+        """Compute the error in the prediction of our system.
+
+        Parameters
+        ----------
+        boards : list
+            the list of all boards through the game
+            where it's white turn.
+        final_status : str
+            the final status of the white player.
+            must be 'win', 'lose', or 'draw'.
+
+        Returns
+        -------
+        float
+            the error in the prediction of our system.
+
+        """
+        pass
+
 
 class FeaturesBasedSystem(AISystem):
-    def __init__(self, name: str, learning_rate: int,
+    """An AISystem that extract features and use them to predict."""
+
+    def __init__(self, name: str, learning_rate: float,
                  useSavedParameters: bool, *features):
+        """Initialize the System.
+
+        Parameters
+        ----------
+        name : str
+            the name of the system.
+        learning_rate : float
+            used when we want to update the parameters.
+            must be a small value << 1.
+        useSavedParameters : bool
+            indicates if you want to use the parameters from previous
+            training processes of the system with the given name.
+            if its value is False, then the parameters will given a random
+            values.
+            when no previous parameters found for the system the behaviour
+            is similar to where the value is False.
+        *features : functions
+            a functions that extracts features.
+            the functions must take a board and return a numeric value.
+
+        Returns
+        -------
+        None.
+
+        """
         # add features:
         self._features = []
         self._features.append(self._f0_b)
@@ -86,15 +157,57 @@ class FeaturesBasedSystem(AISystem):
         self._learning_rate = learning_rate
 
     def copy(self):
+        """Use it to copy the system.
+
+        Returns
+        -------
+        AISystem
+            a copy of the calling system.
+
+        """
         s = FeaturesBasedSystem('copy_'+self._name, self._learning_rate,
                                 self._useSavedParameters,
                                 *self._add_features.copy())
         return s
 
     def get_name(self) -> str:
+        """Get the name of the system.
+
+        Returns
+        -------
+        str
+            the name of the system.
+
+        """
         return self._name
 
     def generate_training_set(self, boards: list, final_status: str) -> tuple:
+        """Generate the training set from the given history of some game.
+
+        Parameters
+        ----------
+        boards : list
+            the list of all boards through the game
+            where it's white turn.
+        final_status : str
+            the final status of the white player.
+            must be 'win', 'lose', or 'draw'.
+
+        Raises
+        ------
+        ValueError
+            if the given list of boards represents a game that not end yet.
+
+        Returns
+        -------
+        tuple
+            first element is a list of the training examples.
+                it's a list of 2-tuple.
+                so the first column contains the boards.
+                the second column contains the training values of each board.
+            second element is a list of the predicted values of the boards.
+
+        """
         boards.reverse()
         m = len(boards)
         # shape = (m, 2)
@@ -128,6 +241,23 @@ class FeaturesBasedSystem(AISystem):
         return training_set, v_hat
 
     def compute_error(self, boards: list, final_status: str) -> float:
+        """Compute the error in the prediction of our system.
+
+        Parameters
+        ----------
+        boards : list
+            the list of all boards through the game
+            where it's white turn.
+        final_status : str
+            the final status of the white player.
+            must be 'win', 'lose', or 'draw'.
+
+        Returns
+        -------
+        float
+            the error in the prediction of our system.
+
+        """
         training_set, pred = self.generate_training_set(boards, final_status)
         v_tr = np.array([x[1] for x in training_set])
         v_hat = np.array(pred)
@@ -143,9 +273,6 @@ class FeaturesBasedSystem(AISystem):
         boards : list
             a list of boards represent the board positions through the game.
             type of each element must be of type Board.
-        colour : str
-            the colour that the system play with.
-            colour must be either 'white', or 'black'
         final_status: str
             the final status of the game, i.e 'win', 'lose', 'draw'.
 
@@ -165,29 +292,33 @@ class FeaturesBasedSystem(AISystem):
         # n features for each example
         X = self.get_all_features(boards)
         assert(X.shape == (len(training_set), len(self._features)))
-        # temp = np.dot(X.T, v_tr - v_hat)
-        # temp = temp[..., np.newaxis]
+
         m = X.shape[0]
-        n = X.shape[1]
-        # for loop version:
-# =============================================================================
-#         for i in reversed(range(m)):
-#             v_hat = self.predict(training_set[i][0])
-#             self._parameters = self._parameters - (
-#                     self._learning_rate * X[i, :].reshape(n, 1) * (v_hat - v_tr[i])
-#                 )
-# =============================================================================
 
         # vectorized version:
         self._parameters = self._parameters + (self._learning_rate/m)*(
                                                     np.dot(X.T, v_tr - v_hat)
                                                 )
 
+        # save the parameters into a file to use them later.
         if self._useSavedParameters is True:
             with open(self._name + '_' + 'parameters.npy', 'wb') as f:
                 np.save(f, self._parameters)
 
     def get_features(self, board: Board) -> np.array:
+        """Get the features of the given board.
+
+        Parameters
+        ----------
+        board : Board
+
+        Returns
+        -------
+        x : np.array
+            an array with shape: (number of features, 1).
+            contains the features values for the given board.
+
+        """
         n = len(self._features)
         x = np.zeros((n, 1))
         for i in range(n):
@@ -195,6 +326,20 @@ class FeaturesBasedSystem(AISystem):
         return x
 
     def get_all_features(self, boards: list) -> np.array:
+        """Get the features of all boards.
+
+        Parameters
+        ----------
+        boards : list
+            a list of boards.
+
+        Returns
+        -------
+        x : np.array
+            an array with shape: (number of boards, number of features).
+            i-th row contains the features values for the i-th board.
+
+        """
         m = len(boards)
         n = len(self._features)
         x = np.zeros((m, n))
@@ -203,6 +348,22 @@ class FeaturesBasedSystem(AISystem):
         return x
 
     def predict(self, board: Board) -> float:
+        """Use it to predict the fitness value for a given board.
+
+        the predict value is a linear combination of the
+        features values and the parameters.
+
+        Parameters
+        ----------
+        board : Board
+            the board we want to predict its fitness.
+
+        Returns
+        -------
+        float
+            the fitness value of the given board.
+
+        """
         # features vector { shape=(n, 1) }:
         x = self.get_features(board)
         return np.sum(np.dot(self._parameters.T, x))
