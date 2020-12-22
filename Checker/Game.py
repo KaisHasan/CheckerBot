@@ -214,7 +214,7 @@ class Board:
 
     """
 
-    draw_turn_number = 100  # max. number of game's turns before declare draw.
+    draw_turn_number = 300  # max. number of game's turns before declare draw.
 
     def __init__(self, white_disks: set, black_disks: set) -> None:
         """Initialize the Board.

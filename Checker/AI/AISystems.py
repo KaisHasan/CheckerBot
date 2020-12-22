@@ -150,7 +150,9 @@ class FeaturesBasedSystem(AISystem):
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
                     self._parameters = np.load(f, allow_pickle=True)
-            except IOError:
+            except IOError as err:
+                print(err)
+                print('system will use random parameters')
                 pass  # if no file exist just use the default values first
 
         # set learning rate
