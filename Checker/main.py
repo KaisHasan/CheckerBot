@@ -7,8 +7,7 @@ Created on Thu Dec 17 23:04:20 2020
 
 from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
-from Checker.Engine import train, play, play_with_other_agent, test_agents
-from Checker.Game import Board
+from Checker.Engine import train, play, test_agents
 
 
 if __name__ == '__main__':
@@ -22,8 +21,10 @@ if __name__ == '__main__':
         return agent
 
 # =============================================================================
-#     ag = get_agent('tom_agent', 0.001, [])
-#     train(ag, 10)
+#     ag1 = get_agent('tom_agent_test', 0.001, [])
+#     # train(ag1, 1000)
+#     # ag2 = get_agent('tom_agent', 0.001, [])
+#     # test_agents(ag1, ag2, 100)
 # 
 #     import sys
 #     sys.exit()

@@ -8,9 +8,35 @@ Created on Thu Dec 17 22:49:48 2020
 from Checker.AI.Agent import Agent
 from Checker.AI.BoardGenerators import initial_board_generator
 from Checker.UI import CLI
-from Checker.Game import Moves, Board
+from Checker.Game import Moves
 import matplotlib.pyplot as plt
 import numpy as np
+
+
+def update_draw_counter(draw_counter: int, size_before: int,
+                        size_after: int) -> None:
+    """Update counter of non-attack moves, which is a condition for draw.
+
+    Parameters
+    ----------
+    draw_counter : int
+        counter of non-attack moves.
+    size_before : int
+        the size of the board before the move.
+    size_after : int
+        the size of the board after the draw.
+
+    Returns
+    -------
+    int
+        counter of non-attack moves after update process.
+
+    """
+    if size_before != size_after:
+        draw_counter = 0
+    else:
+        draw_counter += 1
+    return draw_counter
 
 
 def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
@@ -55,8 +81,10 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
         # first element is the status (i.e 'win', 'lose', or draw).
         # second element is the colour of the player with the final status.
         final_status = (None, None)
+        # counter of non-attack moves.
+        draw_counter = 0
 
-        for turn in range(1, Board.draw_turn_number + 1):
+        for turn in range(1, 10000):
             # alternate the roles of the same agent by setting its colour
             # to the colour of the player who should move in the current turn
             agent.set_colour(colour[turn % 2])
@@ -64,7 +92,7 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
             if colour[turn % 2] == 'white':
                 boards.append(current_board.copy())
             # get status of the game, 'None' indicates that game is still going
-            status = current_board.get_status(colour[turn % 2], turn)
+            status = current_board.get_status(colour[turn % 2], draw_counter)
 
             # print the turn number and the board if we need them.
             if output is True:
@@ -76,9 +104,19 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
             if status is not None:
                 final_status = (status, colour[turn % 2])
                 break
+
+            # number of disks before the move:
+            size_before = current_board.get_number_of_disks(None)
+
             # get the next board
             # this done by letting the agent choose the move.
             current_board = agent.choose_board(current_board)
+
+            # number of disks before the move:
+            size_after = current_board.get_number_of_disks(None)
+
+            draw_counter = update_draw_counter(draw_counter, size_before,
+                                               size_after)
 
         # get the final status for white
         if final_status[1] == 'black' and final_status[0] != 'draw':
@@ -142,8 +180,10 @@ def play(agent: Agent, train: bool = False) -> None:
     colour = {1: 'white', 0: 'black'}
     final_status = (None, None)
     boards = []
-    for turn in range(1, 200):
-        status = current_board.get_status(colour[turn % 2], turn)
+    # counter of non-attack moves.
+    draw_counter = 0
+    for turn in range(1, 10000):
+        status = current_board.get_status(colour[turn % 2], draw_counter)
         print(f'turn: {turn}')
         cli.show(current_board)
         if colour[turn % 2] == 'white':
@@ -155,6 +195,10 @@ def play(agent: Agent, train: bool = False) -> None:
         if status is not None:
             final_status = (status, colour[turn % 2])
             break
+
+        # number of disks before the move:
+        size_before = current_board.get_number_of_disks(None)
+
         if colour[turn % 2] == agent.get_colour():
             current_board = agent.choose_board(current_board)
         else:
@@ -175,6 +219,12 @@ def play(agent: Agent, train: bool = False) -> None:
                 except ValueError as err:
                     print(err)
             current_board = get_board(current_board, loc1, loc2)
+
+            # number of disks before the move:
+            size_after = current_board.get_number_of_disks(None)
+
+            draw_counter = update_draw_counter(draw_counter, size_before,
+                                               size_after)
     temp_status = final_status[0]
     if final_status[1] != 'white':
         temp_status = 'win' if temp_status == 'lose' else 'lose'
@@ -214,9 +264,11 @@ def play_with_other_agent(agent1: Agent, agent2: Agent,
     final_status = (None, None)
     colour = {1: 'white', 0: 'black'}
     cli = CLI()
+    # counter of non-attack moves.
+    draw_counter = 0
     current_board = initial_board_generator()
-    for turn in range(1, Board.draw_turn_number + 1):
-        status = current_board.get_status(colour[turn % 2], turn)
+    for turn in range(1, 10000):
+        status = current_board.get_status(colour[turn % 2], draw_counter)
         if output is True:
             print(f'turn: {turn}')
             cli.show(current_board)
@@ -226,17 +278,49 @@ def play_with_other_agent(agent1: Agent, agent2: Agent,
         if status is not None:
             final_status = (status, colour[turn % 2])
             break
+
+        # number of disks before the move:
+        size_before = current_board.get_number_of_disks(None)
+
         if colour[turn % 2] == agent1.get_colour():
             current_board = agent1.choose_board(current_board)
         else:
             current_board = agent2.choose_board(current_board)
+
+        # number of disks before the move:
+        size_after = current_board.get_number_of_disks(None)
+
+        draw_counter = update_draw_counter(draw_counter, size_before,
+                                           size_after)
+
     # get the final status for the first player
     if final_status[1] != agent1.get_colour() and final_status[0] != 'draw':
         final_status = ('win' if final_status[0] == 'lose' else 'lose',
                         final_status[1])
     return final_status[0]
 
+
 def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
+    """Use this function to let two agents play together.
+
+    this function will print the status of the games.
+    the agent1 whill take 'white' first, then 'black'.
+    so the total number of games will be 2*num_of_games.
+
+    Parameters
+    ----------
+    agent1 : Agent
+        the first agent.
+    agent2 : Agent
+        the second.
+    num_of_games : int
+        number of test games.
+
+    Returns
+    -------
+    None.
+
+    """
     d = {'win': 1, 'lose': -1, 'draw': 0}
     print('######################################################')
     print(f'status for {agent1.get_name()}')
@@ -246,7 +330,7 @@ def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
     agent2.set_colour('black')
     results = []
     for i in range(num_of_games):
-        result = play_with_other_agent(agent1, agent2, False)
+        result = play_with_other_agent(agent1, agent2)
         results.append(d[result])
     wins = results.count(1)
     loses = results.count(-1)

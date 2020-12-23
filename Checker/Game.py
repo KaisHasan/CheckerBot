@@ -214,7 +214,9 @@ class Board:
 
     """
 
-    draw_turn_number = 80  # max. number of game's turns before declare draw.
+    # max. number of game's turns without attack-move, before
+    # declare draw.
+    max_draw_counter = 55
 
     def __init__(self, white_disks: set, black_disks: set) -> None:
         """Initialize the Board.
@@ -448,7 +450,7 @@ class Board:
         self._disks[disk.get_colour()].add(disk)
         self._disks_at[location] = disk
 
-    def get_status(self, colour: str, turn: int) -> str:
+    def get_status(self, colour: str, draw_counter: int) -> str:
         """Get the status of the game for the player with the given colour.
 
         the status is 'win', 'lose', or 'draw' if the game ends,
@@ -460,8 +462,8 @@ class Board:
             the colour of the pieces controlled by the player that we want
             to know if he is at 'win', 'lose', 'draw' status, or if the
             game is not end yet.
-        turn : int
-            the current turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -481,7 +483,7 @@ class Board:
             return 'win'
         n_me = len(self.get_disks(colour))
         n_enemy = len(self.get_disks(enemy_colour))
-        if turn >= Board.draw_turn_number:
+        if draw_counter >= Board.max_draw_counter:
             return 'draw'
         return None  # the game is still going
 
