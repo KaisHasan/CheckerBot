@@ -9,6 +9,7 @@ from Checker.Game import Board, Moves, Disk
 import numpy as np
 import json
 
+
 class AISystem:
     """Abstract class for an AI system.
 
@@ -36,7 +37,7 @@ class AISystem:
         pass
 
     def predict(self, boards: list) -> np.array:
-        """Use it to predict the fitness value for a given board.
+        """Use it to predict the fitness value for a given list of boards.
 
         Parameters
         ----------
@@ -385,6 +386,35 @@ class NeuralNetworkBasedSystem(AISystem):
 
     def __init__(self, name: str, learning_rate: float, num_hidden_units: list,
                  use_saved_parameters: bool) -> None:
+        """Initialize Neural Network System.
+
+        Parameters
+        ----------
+        name : str
+            name of the system [used to save parameters].
+        learning_rate : float
+        num_hidden_units : list
+            i-th element of the list contains number of units
+            in the i-th hidden layer.
+        use_saved_parameters : bool
+            indicates if you want to use the parameters from previous
+            training processes of the system with the given name.
+            if its value is False, then the parameters will given a random
+            values.
+            when no previous parameters found for the system the behaviour
+            is similar to where the value is False.
+
+        Raises
+        ------
+        ValueError
+            if the number of hidden layers (i.e the length of the list:
+                                            num_hidden_units) is zero.
+
+        Returns
+        -------
+        None
+
+        """
         # set name
         self._name = name
 
@@ -392,9 +422,9 @@ class NeuralNetworkBasedSystem(AISystem):
 
         if len(num_hidden_units) < 1:
             raise ValueError('Number of the hidden units must be > 0')
-        self._num_units = [32]
-        self._num_units.extend(num_hidden_units)
-        self._num_units.append(1)
+        self._num_units = [32]  # number of units in input layer
+        self._num_units.extend(num_hidden_units)  # add hidden layers
+        self._num_units.append(1)  # add the output layer
 
         # set parameters { shape = (n, 1) }:
         self._parameters = self._initialize_parameters()
@@ -411,16 +441,35 @@ class NeuralNetworkBasedSystem(AISystem):
         self._learning_rate = learning_rate
 
     def save_parameters(self) -> None:
+        """Save the parameters of the neural network into json file.
+
+        Returns
+        -------
+        None
+
+        """
         parameters = dict()
+        # convert the numpy arrays into lists
+        # that's because we can't serialize numpy arrays
         for k, v in self._parameters.items():
             parameters[k] = v.tolist()
+        # write into the json file
         with open(self._name + '_parameters.json', 'w') as f:
             json.dump(parameters, f)
 
     def load_parameters(self) -> dict:
+        """Load the parameters of the neural network from a json file.
+
+        Returns
+        -------
+        dict
+            the parameters of the neural network.
+
+        """
         with open(self._name + '_parameters.json', 'r') as f:
-            temp = json.load(f)
+            temp = json.load(f)  # load the parameters into dictionary
             parameters = dict()
+            # convert the lists to numpy arrays
             for k, v in temp.items():
                 parameters[k] = np.array(v)
             return parameters
@@ -441,20 +490,32 @@ class NeuralNetworkBasedSystem(AISystem):
         None
 
         """
+        # generate:
+        # training values into v_tr
+        # activation value of every layer into cache
         v_tr, cache = self._generate_training_set(boards, final_status)
+
+        # get the gradient
+        # dictionary contains the partial derivative of cost function
+        # w.r.t weights and biases of every layer
         grad = self._back_propagation(v_tr, cache)
+
+        # number of layers + 1 (we don't count input layer i.e layer zero)
         num_layer = len(self._num_units)
+
         for i in range(1, num_layer):
+            # update weights
             self._parameters['W' + str(i)] -= self._learning_rate * (
                                                 grad['dW' + str(i)]
                                                 )
+            # update bias
             self._parameters['b' + str(i)] -= self._learning_rate * (
                                                 grad['db' + str(i)]
                                                 )
-        self.save_parameters()
+        self.save_parameters()  # save parameters after update done.
 
     def predict(self, boards: list) -> np.array:
-        """Use it to predict the fitness value for a given board.
+        """Use it to predict the fitness value for a given list of boards.
 
         Parameters
         ----------
@@ -467,6 +528,8 @@ class NeuralNetworkBasedSystem(AISystem):
             the fitnesses values of the given boards.
 
         """
+        # do forward propagation to get all activation values of layers
+        # retrieve tha last activation value which represent the output.
         return self._forward_propagation(boards)[-1]
 
     def copy(self):
@@ -518,10 +581,30 @@ class NeuralNetworkBasedSystem(AISystem):
         return np.sum(np.dot(diff.T, diff))
 
     def _activation(self, z: np.array) -> np.array:
+        """Activation function.
+
+        Parameters
+        ----------
+        z : np.array
+
+        Returns
+        -------
+        np.array
+            shape of input is the same of the shape of output.
+
+        """
         return np.tanh(z)
 
     def _initialize_parameters(self) -> dict:
-        num_layer = len(self._num_units)
+        """Initialize the parameters of the neural network.
+
+        Returns
+        -------
+        dict
+            dictionary contains the parameters of the neural network.
+
+        """
+        num_layer = len(self._num_units)  # number of layer + 1
         parameters = dict()
         for i in range(1, num_layer):
             parameters['W' + str(i)] = np.random.randn(self._num_units[i],
@@ -531,6 +614,18 @@ class NeuralNetworkBasedSystem(AISystem):
         return parameters
 
     def _get_input(self, board: Board) -> np.array:
+        """Generate the input to the neural network from a board.
+
+        Parameters
+        ----------
+        board : Board
+
+        Returns
+        -------
+        np.array
+            shape is (32, 1).
+
+        """
         inp = np.zeros((32, 1))
         id = 0
         for i in range(8):
@@ -549,6 +644,18 @@ class NeuralNetworkBasedSystem(AISystem):
         return inp
 
     def _get_input_layer(self, boards: list) -> np.array:
+        """Generate the input of the neural network from a list of boards.
+
+        Parameters
+        ----------
+        boards : list
+
+        Returns
+        -------
+        np.array
+            shape is (32, number of boards).
+
+        """
         m = len(boards)
         A_0 = np.zeros((32, m))
         for j in range(m):
@@ -556,6 +663,19 @@ class NeuralNetworkBasedSystem(AISystem):
         return A_0
 
     def _forward_propagation(self, boards: list) -> list:
+        """Forward propagation through the network.
+
+        Parameters
+        ----------
+        boards : list
+            list of boards through the game for 'white'.
+
+        Returns
+        -------
+        list
+            activation value for each layer.
+
+        """
         num_layer = len(self._num_units)
         A_0 = self._get_input_layer(boards)
         cache = [A_0]
@@ -569,6 +689,22 @@ class NeuralNetworkBasedSystem(AISystem):
         return cache
 
     def _back_propagation(self, v_tr: np.array, cache: list) -> dict:
+        """Back propagation through the network to caculate gradient.
+
+        Parameters
+        ----------
+        v_tr : np.array
+            training values.
+        cache : list
+            activation value for each layer.
+
+        Returns
+        -------
+        dict
+            dictionary contains the partial derivative of cost function
+            w.r.t weights and biases of every layer.
+
+        """
         m = v_tr.shape[1]
         num_layer = len(self._num_units)
         A_n = cache[-1]
