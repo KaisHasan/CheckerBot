@@ -97,6 +97,10 @@ class Agent:
         ----------
         boards : list
             list of boards we want to calculate their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -114,6 +118,10 @@ class Agent:
         ----------
         board : Board
             the current board.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------

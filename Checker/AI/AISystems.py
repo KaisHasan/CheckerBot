@@ -37,12 +37,16 @@ class AISystem:
         pass
 
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given board.
+        """Use it to predict the fitness value for a given list of boards.
 
         Parameters
         ----------
         boards : list
             list of boards we want to predict their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -358,6 +362,10 @@ class FeaturesBasedSystem(AISystem):
         ----------
         boards : list
             list of boards we want to predict their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -668,6 +676,19 @@ class MiniMaxAlphaBetaSystem(AISystem):
     """MiniMax alpha Beta for system for checker bot."""
 
     def __init__(self, depth: int) -> None:
+        """Initialize the system.
+
+        Parameters
+        ----------
+        depth : int
+            the maximum depth of search before using a prediction
+            using FeaturesBasedSystem.
+
+        Returns
+        -------
+        None
+
+        """
         self._parameters = np.array([-0.01194564,
                                     -0.02149239,
                                      0.00013474,
@@ -702,12 +723,16 @@ class MiniMaxAlphaBetaSystem(AISystem):
         pass
 
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given board.
+        """Use it to predict the fitness value for a given list of boards.
 
         Parameters
         ----------
         boards : list
             list of boards we want to predict their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -769,7 +794,25 @@ class MiniMaxAlphaBetaSystem(AISystem):
         """
         return 0
 
-    def _terminal_state(self, board: Board, turn: int, draw_counter: int):
+    def _terminal_state(self, board: Board, turn: int,
+                        draw_counter: int) -> str:
+        """Get the status of a terminal state, or None if it's not terminal.
+
+        Parameters
+        ----------
+        board : Board
+            board state.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
+
+        Returns
+        -------
+        str
+            'win', 'lose', 'draw', or None if it's not a terminal state.
+
+        """
         if turn % 2 == 1:
             colour = 'white'
         else:
