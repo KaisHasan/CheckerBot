@@ -683,6 +683,32 @@ class Moves:
         return next_boards
 
 
+def update_draw_counter(draw_counter: int, size_before: int,
+                        size_after: int) -> None:
+    """Update counter of non-attack moves, which is a condition for draw.
+
+    Parameters
+    ----------
+    draw_counter : int
+        counter of non-attack moves.
+    size_before : int
+        the size of the board before the move.
+    size_after : int
+        the size of the board after the draw.
+
+    Returns
+    -------
+    int
+        counter of non-attack moves after update process.
+
+    """
+    if size_before != size_after:
+        draw_counter = 0
+    else:
+        draw_counter += 1
+    return draw_counter
+
+
 if __name__ == '__main__':
     def disk_and_board_test():
         d1 = Disk(location=(7, 7), colour='white')

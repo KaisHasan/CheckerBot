@@ -5,9 +5,10 @@ Created on Mon Dec 14 22:24:06 2020
 @author: Kais
 """
 
-from Checker.Game import Board, Moves, Disk
+from Checker.Game import Board, Moves, Disk, update_draw_counter
 import numpy as np
 import json
+
 
 class AISystem:
     """Abstract class for an AI system.
@@ -35,7 +36,7 @@ class AISystem:
         """
         pass
 
-    def predict(self, boards: list) -> np.array:
+    def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
         """Use it to predict the fitness value for a given board.
 
         Parameters
@@ -157,6 +158,21 @@ class FeaturesBasedSystem(AISystem):
 
         # set learning rate
         self._learning_rate = learning_rate
+
+    def set_parameters(self, parameters: np.array) -> None:
+        """Set the parameters of the system to a given values.
+
+        Parameters
+        ----------
+        parameters : np.array
+            a given list of parameters.
+
+        Returns
+        -------
+        None
+
+        """
+        self._parameters = parameters
 
     def copy(self):
         """Use it to copy the system.
@@ -332,11 +348,11 @@ class FeaturesBasedSystem(AISystem):
             x[i, :] = self.get_features(board).ravel()
         return x
 
-    def predict(self, boards: list) -> np.array:
-        """Use it to predict the fitness value for a given board.
+    def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
+        """Use it to predict the fitness value for a given list of boards.
 
-        the predict value is a linear combination of the
-        features values and the parameters.
+        the predict value for each board is a linear combination
+        of the features values and the parameters.
 
         Parameters
         ----------
@@ -453,7 +469,7 @@ class NeuralNetworkBasedSystem(AISystem):
                                                 )
         self.save_parameters()
 
-    def predict(self, boards: list) -> np.array:
+    def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
         """Use it to predict the fitness value for a given board.
 
         Parameters
@@ -648,6 +664,182 @@ class NeuralNetworkBasedSystem(AISystem):
         return training_set, cache
 
 
+class MiniMaxAlphaBetaSystem(AISystem):
+    """MiniMax alpha Beta for system for checker bot."""
+
+    def __init__(self, depth: int) -> None:
+        self._parameters = np.array([-0.01194564,
+                                    -0.02149239,
+                                     0.00013474,
+                                    -0.00838412,
+                                     0.00121441,
+                                     0.0057414 ,
+                                    -0.00907267])
+        self._parameters = self._parameters.reshape((7, 1))
+        assert(self._parameters.shape == (7, 1))
+        self._pred_system = FeaturesBasedSystem('temp',
+                                                0.01,
+                                                False)
+        self._pred_system.set_parameters(self._parameters)
+        self._depth = depth
+
+    def update_parameters(self, boards: list, final_status: str) -> None:
+        """Use it to update the parameters of the system.
+
+        Parameters
+        ----------
+        boards : list
+            a list of boards represent the board positions through the game.
+            type of each element must be of type Board.
+        final_status: str
+            the final status of the game, i.e 'win', 'lose', 'draw'.
+
+        Returns
+        -------
+        None
+
+        """
+        pass
+
+    def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
+        """Use it to predict the fitness value for a given board.
+
+        Parameters
+        ----------
+        boards : list
+            list of boards we want to predict their fitnesses.
+
+        Returns
+        -------
+        np.array
+            the fitnesses values of the given boards.
+
+        """
+        m = len(boards)
+        result = np.zeros((m, 1))
+        if turn % 2 == 1:
+            for i in range(m):
+                result[i] = self._min(boards[i], 1, turn, draw_counter,
+                                      -1e7, 1e7)
+        else:
+            for i in range(m):
+                result[i] = self._max(boards[i], 1, turn, draw_counter,
+                                      -1e7, 1e7)
+        return result
+
+    def copy(self):
+        """Use it to copy the system.
+
+        Returns
+        -------
+        AISystem
+            a copy of the calling system.
+
+        """
+        return self
+
+    def get_name(self) -> str:
+        """Get the name of the system.
+
+        Returns
+        -------
+        str
+            the name of the system.
+
+        """
+        return f'MiniMaxAlphaBeta{self._depth}'
+
+    def compute_error(self, boards: list, final_status: str) -> float:
+        """Compute the error in the prediction of our system.
+
+        Parameters
+        ----------
+        boards : list
+            the list of all boards through the game
+            where it's white turn.
+        final_status : str
+            the final status of the white player.
+            must be 'win', 'lose', or 'draw'.
+
+        Returns
+        -------
+        float
+            the error in the prediction of our system.
+
+        """
+        return 0
+
+    def _terminal_state(self, board: Board, turn: int, draw_counter: int):
+        if turn % 2 == 1:
+            colour = 'white'
+        else:
+            colour = 'black'
+        status = board.get_status(colour, draw_counter)
+        return status
+
+    def _max(self, board: Board, depth: int,
+             turn: int, draw_counter: int,
+             alpha: float, beta: float) -> float:
+        status = self._terminal_state(board, turn, draw_counter)
+        if status is not None:
+            sign = 1 if turn % 2 == 1 else -1
+            if status == 'win':
+                return 1 * sign
+            elif status == 'lose':
+                return -1 * sign
+            else:
+                return 0
+        if depth >= self._depth:
+            return np.sum(self._pred_system.predict([board], turn,
+                                                    draw_counter))
+        boards = Moves.get_all_next_boards(board, 'white')
+        current_max = -1e7
+        size_before = board.get_number_of_disks(None)
+        for b in boards:
+            next_draw_counter = draw_counter
+            size_after = b.get_number_of_disks(None)
+            next_draw_counter = update_draw_counter(next_draw_counter,
+                                                    size_before, size_after)
+            current_max = max(current_max, self._min(b, depth + 1, turn + 1,
+                                                     next_draw_counter,
+                                                     alpha, beta))
+            if current_max >= beta:
+                return current_max
+            alpha = max(alpha, current_max)
+        return current_max
+
+    def _min(self, board: Board, depth: int,
+             turn: int, draw_counter: int,
+             alpha: float, beta: float) -> float:
+        status = self._terminal_state(board, turn, draw_counter)
+        if status is not None:
+            sign = 1 if turn % 2 == 1 else -1
+            if status == 'win':
+                return 1 * sign
+            elif status == 'lose':
+                return -1 * sign
+            else:
+                return 0
+        if depth >= self._depth:
+            return np.sum(self._pred_system.predict([board], turn,
+                                                    draw_counter))
+        boards = Moves.get_all_next_boards(board, 'black')
+        current_min = 1e7
+        size_before = board.get_number_of_disks(None)
+        for b in boards:
+            next_draw_counter = draw_counter
+            size_after = b.get_number_of_disks(None)
+            next_draw_counter = update_draw_counter(next_draw_counter,
+                                                    size_before, size_after)
+            current_min = min(current_min, self._max(b, depth + 1, turn + 1,
+                                                     next_draw_counter,
+                                                     alpha, beta))
+            if current_min <= alpha:
+                return current_min
+            beta = min(beta, current_min)
+        return current_min
+
+
 if __name__ == '__main__':
     f_system = FeaturesBasedSystem('test', 0.01, True)
     white_disks = [(0, 4), (0, 6), (1, 5), (1, 7),
@@ -659,5 +851,5 @@ if __name__ == '__main__':
     for i, loc in enumerate(black_disks.copy()):
         black_disks[i] = Disk(location=loc, colour='black')
     b = Board(set(white_disks), set(black_disks))
-    print(f_system.predict([b]))
+    print(f_system.predict([b], 0, 0))
     print('Everything work.')
