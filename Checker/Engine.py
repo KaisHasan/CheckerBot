@@ -8,35 +8,9 @@ Created on Thu Dec 17 22:49:48 2020
 from Checker.AI.Agent import Agent
 from Checker.AI.BoardGenerators import initial_board_generator
 from Checker.UI import CLI
-from Checker.Game import Moves
+from Checker.Game import Moves, update_draw_counter
 import matplotlib.pyplot as plt
 import numpy as np
-
-
-def update_draw_counter(draw_counter: int, size_before: int,
-                        size_after: int) -> None:
-    """Update counter of non-attack moves, which is a condition for draw.
-
-    Parameters
-    ----------
-    draw_counter : int
-        counter of non-attack moves.
-    size_before : int
-        the size of the board before the move.
-    size_after : int
-        the size of the board after the draw.
-
-    Returns
-    -------
-    int
-        counter of non-attack moves after update process.
-
-    """
-    if size_before != size_after:
-        draw_counter = 0
-    else:
-        draw_counter += 1
-    return draw_counter
 
 
 def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
@@ -110,7 +84,8 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
 
             # get the next board
             # this done by letting the agent choose the move.
-            current_board = agent.choose_board(current_board)
+            current_board = agent.choose_board(current_board,
+                                               turn, draw_counter)
 
             # number of disks before the move:
             size_after = current_board.get_number_of_disks(None)
@@ -200,7 +175,8 @@ def play(agent: Agent, train: bool = False) -> None:
         size_before = current_board.get_number_of_disks(None)
 
         if colour[turn % 2] == agent.get_colour():
-            current_board = agent.choose_board(current_board)
+            current_board = agent.choose_board(current_board,
+                                               turn, draw_counter)
         else:
             while True:
                 try:
@@ -283,9 +259,11 @@ def play_with_other_agent(agent1: Agent, agent2: Agent,
         size_before = current_board.get_number_of_disks(None)
 
         if colour[turn % 2] == agent1.get_colour():
-            current_board = agent1.choose_board(current_board)
+            current_board = agent1.choose_board(current_board,
+                                                turn, draw_counter)
         else:
-            current_board = agent2.choose_board(current_board)
+            current_board = agent2.choose_board(current_board,
+                                                turn, draw_counter)
 
         # number of disks before the move:
         size_after = current_board.get_number_of_disks(None)

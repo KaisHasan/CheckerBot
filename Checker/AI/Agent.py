@@ -87,7 +87,7 @@ class Agent:
             raise ValueError("colour must be either 'white', or 'black'!")
         self._colour = colour
 
-    def get_fitness(self, boards: list) -> float:
+    def get_fitness(self, boards: list, turn: int, draw_counter: int) -> float:
         """Get the fitness value of a given board.
 
         this function will calculate how good the board is, using
@@ -97,6 +97,10 @@ class Agent:
         ----------
         boards : list
             list of boards we want to calculate their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -104,15 +108,20 @@ class Agent:
             how good the board is (i.e the fitness value of the board).
 
         """
-        return self._system.predict(boards)
+        return self._system.predict(boards, turn, draw_counter)
 
-    def choose_board(self, board: Board) -> Board:
+    def choose_board(self, board: Board, turn: int,
+                     draw_counter: int) -> Board:
         """Choose the best board by applying the best move on the given board.
 
         Parameters
         ----------
         board : Board
             the current board.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -124,7 +133,7 @@ class Agent:
         # generate all possible boards
         boards = Moves.get_all_next_boards(board, self._colour)
         # get the fitness of every board
-        values = self.get_fitness(boards)
+        values = self.get_fitness(boards, turn, draw_counter)
         # get the id of the best board
         # because our evaluation function is predict how good
         # a board is for white, then when we play as 'black'
@@ -195,7 +204,7 @@ if __name__ == '__main__':
     for i, loc in enumerate(black_disks.copy()):
         black_disks[i] = Disk(location=loc, colour='black')
     b1 = Board(set(white_disks), set(black_disks))
-    _ = a.get_fitness([b1])
+    _ = a.get_fitness([b1], 0, 0)
 
-    b = a.choose_board(b1)
+    b = a.choose_board(b1, 0, 0)
     print('Everything work.')
