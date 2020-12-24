@@ -36,11 +36,7 @@ class AISystem:
         """
         pass
 
-<<<<<<< HEAD
-    def predict(self, boards: list) -> np.array:
-=======
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
->>>>>>> minimax_system
         """Use it to predict the fitness value for a given list of boards.
 
         Parameters
@@ -541,13 +537,8 @@ class NeuralNetworkBasedSystem(AISystem):
                                                 )
         self.save_parameters()  # save parameters after update done.
 
-<<<<<<< HEAD
-    def predict(self, boards: list) -> np.array:
-        """Use it to predict the fitness value for a given list of boards.
-=======
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given board.
->>>>>>> minimax_system
+        """Use it to predict the fitness value for a given list of boards.
 
         Parameters
         ----------

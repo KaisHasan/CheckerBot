@@ -636,11 +636,6 @@ class Moves:
                         # add the next_location if we need it
                         if next_locations is not None:
                             next_locations.append(next_location)
-                        # don't add to frontier if the disk have just promoted
-                        # because a disk cannot use king moves until next turn.
-                        # if not current_disk.is_king() and next_disk.is_king():
-                        #    continue
-                        # frontier.append((next_board, next_location, False))
 
         return next_boards
 
@@ -678,7 +673,7 @@ class Moves:
         for disk in board.get_disks(colour):
             next_boards.extend(
                     Moves.get_next_boards(board, disk.get_location(),
-                                         threatened=threatened)
+                                          threatened=threatened)
                 )
         return next_boards
 
@@ -780,7 +775,8 @@ if __name__ == '__main__':
         next_locations = []
         _ = Moves.get_next_boards(b, (4, 2), next_locations=next_locations)
         code_results = sorted(next_locations)
-        correct_results = sorted([(3, 1), (2, 4), (0, 6), (0, 2), (2, 0), (5, 1)])
+        correct_results = sorted([(3, 1), (2, 4), (0, 6),
+                                  (0, 2), (2, 0), (5, 1)])
         assert(code_results == correct_results)
 
     def threat_test():
