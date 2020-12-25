@@ -133,7 +133,7 @@ class Agent:
         # generate all possible boards
         boards = Moves.get_all_next_boards(board, self._colour)
         # get the fitness of every board
-        values = self.get_fitness(boards, turn, draw_counter)
+        values = self.get_fitness(boards, turn + 1, draw_counter)
         # get the id of the best board
         # because our evaluation function is predict how good
         # a board is for white, then when we play as 'black'

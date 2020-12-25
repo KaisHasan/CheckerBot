@@ -892,11 +892,11 @@ class MiniMaxAlphaBetaSystem(AISystem):
         result = np.zeros((m, 1))
         if turn % 2 == 1:
             for i in range(m):
-                result[i] = self._min(boards[i], 1, turn, draw_counter,
+                result[i] = self._max(boards[i], 1, turn, draw_counter,
                                       -1e7, 1e7)
         else:
             for i in range(m):
-                result[i] = self._max(boards[i], 1, turn, draw_counter,
+                result[i] = self._min(boards[i], 1, turn, draw_counter,
                                       -1e7, 1e7)
         return result
 
