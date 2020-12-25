@@ -278,7 +278,8 @@ def play_with_other_agent(agent1: Agent, agent2: Agent,
     return final_status[0]
 
 
-def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
+def test_agents(agent1: Agent, agent2: Agent, num_of_games: int,
+                output: bool = False):
     """Use this function to let two agents play together.
 
     this function will print the status of the games.
@@ -293,6 +294,8 @@ def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
         the second.
     num_of_games : int
         number of test games.
+    output : bool, optional
+        indicates if you want to print the game or not. The default is False.
 
     Returns
     -------
@@ -308,7 +311,7 @@ def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
     agent2.set_colour('black')
     results = []
     for i in range(num_of_games):
-        result = play_with_other_agent(agent1, agent2)
+        result = play_with_other_agent(agent1, agent2, output)
         results.append(d[result])
     wins = results.count(1)
     loses = results.count(-1)
@@ -324,7 +327,7 @@ def test_agents(agent1: Agent, agent2: Agent, num_of_games: int):
     agent2.set_colour('white')
     results = []
     for i in range(num_of_games):
-        result = play_with_other_agent(agent1, agent2)
+        result = play_with_other_agent(agent1, agent2, output)
         results.append(d[result])
     wins = results.count(1)
     loses = results.count(-1)

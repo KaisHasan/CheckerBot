@@ -90,7 +90,7 @@ class Agent:
     def get_fitness(self, boards: list, turn: int, draw_counter: int) -> float:
         """Get the fitness value of a given board.
 
-        this function will calculate how good the board is, using
+        this function will calculate for each board how good it is, using
         agent' system specific prediction.
 
         Parameters

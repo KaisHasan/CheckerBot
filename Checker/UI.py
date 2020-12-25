@@ -35,22 +35,6 @@ class UI:
         """
         pass
 
-    def show_result(self, board: Board) -> None:
-        """Show the result of the current board.
-
-        result must be 'win', 'lose', 'draw', or None if non-final board given.
-
-        Parameters
-        ----------
-        board : Board
-
-        Returns
-        -------
-        None
-
-        """
-        pass
-
 
 class CLI(UI):
     """Command line interface for CheckerGame."""
@@ -109,26 +93,3 @@ class CLI(UI):
             print(f' {i} ', end='')
         print()
         print()
-
-    def show_result(self, board: Board, turn: int) -> None:
-        """Show the result of the current board.
-
-        result must be 'win', 'lose', 'draw', or None if non-final board given.
-
-        Parameters
-        ----------
-        board : Board
-        turn: int
-
-        Returns
-        -------
-        None
-
-        """
-        result = board.get_status('white', turn)
-        if result is None:
-            print('#########Game does not end yet!##########')
-        if result != 'draw':
-            result += ' for white!'
-        result += 'The game is '
-        print(f'######### {result} ############')

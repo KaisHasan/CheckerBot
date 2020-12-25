@@ -37,7 +37,7 @@ class AISystem:
         pass
 
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given list of boards.
+        """Use it to predict the fitnesses values for a given list of boards.
 
         Parameters
         ----------
@@ -353,7 +353,7 @@ class FeaturesBasedSystem(AISystem):
         return x
 
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given list of boards.
+        """Use it to predict the fitnesses values for a given list of boards.
 
         the predict value for each board is a linear combination
         of the features values and the parameters.
@@ -544,6 +544,10 @@ class NeuralNetworkBasedSystem(AISystem):
         ----------
         boards : list
             list of boards we want to predict their fitnesses.
+        turn : int
+            turn's number.
+        draw_counter : int
+            counter of non-attack moves.
 
         Returns
         -------
@@ -600,8 +604,9 @@ class NeuralNetworkBasedSystem(AISystem):
 
         """
         v_tr, cache = self._generate_training_set(boards, final_status)
+        m = v_tr.shape[1]  # number of examples
         diff = cache[-1] - v_tr
-        return np.sum(np.dot(diff.T, diff))
+        return (1./(2*m))*np.sum(np.dot(diff.T, diff))
 
     def _activation(self, z: np.array) -> np.array:
         """Activation function.
@@ -728,19 +733,26 @@ class NeuralNetworkBasedSystem(AISystem):
             w.r.t weights and biases of every layer.
 
         """
-        m = v_tr.shape[1]
-        num_layer = len(self._num_units)
-        A_n = cache[-1]
+        m = v_tr.shape[1]  # number of examples
+        num_layer = len(self._num_units)  # number of layers + 1
+        A_n = cache[-1]  # the output of the neural network
+
         assert(A_n.shape == (1, m))
         assert(v_tr.shape == (1, m))
+
         dZ_n = (1./m)*(A_n - v_tr)*(1. - A_n**2)
+
         assert(dZ_n.shape == (1, m))
+
         grad = dict()
         # (n[l], m).(n[l-1], m).T = (n[l], n[l-1])
         grad['dW' + str(num_layer - 1)] = np.dot(dZ_n, cache[-2].T)
+
         assert(grad['dW' + str(num_layer - 1)].shape == (self._num_units[-1],
                                                          self._num_units[-2]))
+
         grad['db' + str(num_layer - 1)] = dZ_n.sum(axis=1, keepdims=True)
+
         assert(grad['db' + str(num_layer - 1)].shape == (self._num_units[-1],
                                                          1))
         dZ_pre = dZ_n
@@ -751,6 +763,7 @@ class NeuralNetworkBasedSystem(AISystem):
             dZ_i = np.dot(W_pre.T, dZ_pre)*(1. - A_i**2)
             grad['dW' + str(i)] = np.dot(dZ_i, A_pre.T)
             grad['db' + str(i)] = dZ_i.sum(axis=1, keepdims=True)
+
             assert(grad['dW' + str(i)].shape == (self._num_units[i],
                                                  self._num_units[i-1]))
             assert(grad['db' + str(i)].shape == (self._num_units[i], 1))
@@ -858,7 +871,7 @@ class MiniMaxAlphaBetaSystem(AISystem):
         pass
 
     def predict(self, boards: list, turn: int, draw_counter: int) -> np.array:
-        """Use it to predict the fitness value for a given list of boards.
+        """Use it to predict the fitnesses values for a given list of boards.
 
         Parameters
         ----------
