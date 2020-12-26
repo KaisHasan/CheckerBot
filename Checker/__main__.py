@@ -25,12 +25,12 @@ def start_game():
             print('please enter a valid colour!')
     while True:
         try:
-            level = int(input('enter the difficulty level [1-5]: '))
+            level = int(input('enter the difficulty level [1-6]: '))
         except Exception:
             print('please enter an integer value!')
             continue
-        if level > 5 or level < 1:
-            print('please enter a value in range [1, 5]')
+        if level > 6 or level < 1:
+            print('please enter a value in range [1, 6]')
             continue
         break
     agent_colour = 'white' if colour == 'black' else 'black'
@@ -40,6 +40,15 @@ def start_game():
     agent = Agent(agent_colour, system5)
     play(agent)
 
+def test():
+    level = 6
+    agent_colour = 'white'
+    print(f'agent colour: {agent_colour}')
+    print(f'agent difficulty: {level}')
+    system5 = MiniMaxAlphaBetaSystem(level)
+    agent = Agent(agent_colour, system5)
+    play(agent)
 
 if __name__ == '__main__':
-    start_game()
+    # start_game()
+    test()

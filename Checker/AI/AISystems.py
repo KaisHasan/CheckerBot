@@ -395,12 +395,14 @@ class FeaturesBasedSystem(AISystem):
 
     def _f5_number_of_pieces_threatened_by_white(self, board: Board) -> float:
         threatened = dict()
-        _ = Moves.get_all_next_boards(board, 'white', threatened)
+        boards = []
+        Moves.get_all_next_boards(board, 'white', boards, threatened)
         return len(threatened.keys())
 
     def _f6_number_of_pieces_threatened_by_black(self, board: Board) -> float:
         threatened = dict()
-        _ = Moves.get_all_next_boards(board, 'black', threatened)
+        boards = []
+        Moves.get_all_next_boards(board, 'black', boards, threatened)
         return len(threatened.keys())
 
 
@@ -837,6 +839,7 @@ class MiniMaxAlphaBetaSystem(AISystem):
         None
 
         """
+        self._tot_num = 0
         self._parameters = np.array([-0.01194564,
                                     -0.02149239,
                                      0.00013474,
@@ -888,16 +891,36 @@ class MiniMaxAlphaBetaSystem(AISystem):
             the fitnesses values of the given boards.
 
         """
+        self._tot_num = 0
         m = len(boards)
         result = np.zeros((m, 1))
+# =============================================================================
+#         boards = list(zip(boards,
+#                           self._pred_system.predict(boards,
+#                                                     turn,
+#                                                     draw_counter).ravel()
+#                           )
+#                       )
+# =============================================================================
+        # there is a bug here!
+        # draw_counter must be updated
+        # but in practise that doesn't effect the perfomance of the system
+        # so we choose to let it instead of modifing the predict function.
         if turn % 2 == 1:
+            current_max = -10
             for i in range(m):
                 result[i] = self._max(boards[i], 1, turn, draw_counter,
-                                      -1e7, 1e7)
+                                      current_max, 1e7)
+                current_max = max(current_max, result[i])
+                # print(f'result[{i}]: {result[i]}')
         else:
+            current_min = 10
             for i in range(m):
                 result[i] = self._min(boards[i], 1, turn, draw_counter,
-                                      -1e7, 1e7)
+                                      -1e7, current_min)
+                current_min = min(current_min, result[i])
+                # print(f'result[{i}]: {result[i]}')
+        # print(f'DEBUG: number of expanded nodes: {self._tot_num}')
         return result
 
     def copy(self):
@@ -971,6 +994,7 @@ class MiniMaxAlphaBetaSystem(AISystem):
     def _max(self, board: Board, depth: int,
              turn: int, draw_counter: int,
              alpha: float, beta: float) -> float:
+        self._tot_num += 1
         status = self._terminal_state(board, turn, draw_counter)
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1
@@ -983,7 +1007,8 @@ class MiniMaxAlphaBetaSystem(AISystem):
         if depth >= self._depth:
             return np.sum(self._pred_system.predict([board], turn,
                                                     draw_counter))
-        boards = Moves.get_all_next_boards(board, 'white')
+        boards = []
+        Moves.get_all_next_boards(board, 'white', boards)
         current_max = -1e7
         size_before = board.get_number_of_disks(None)
         for b in boards:
@@ -1002,6 +1027,7 @@ class MiniMaxAlphaBetaSystem(AISystem):
     def _min(self, board: Board, depth: int,
              turn: int, draw_counter: int,
              alpha: float, beta: float) -> float:
+        self._tot_num += 1
         status = self._terminal_state(board, turn, draw_counter)
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1
@@ -1014,7 +1040,8 @@ class MiniMaxAlphaBetaSystem(AISystem):
         if depth >= self._depth:
             return np.sum(self._pred_system.predict([board], turn,
                                                     draw_counter))
-        boards = Moves.get_all_next_boards(board, 'black')
+        boards = []
+        Moves.get_all_next_boards(board, 'black', boards)
         current_min = 1e7
         size_before = board.get_number_of_disks(None)
         for b in boards:

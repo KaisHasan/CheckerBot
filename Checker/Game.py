@@ -472,12 +472,14 @@ class Board:
             otherwise None is returned..
 
         """
-        boards_me = Moves.get_all_next_boards(self, colour)
+        boards_me = []
+        Moves.get_all_next_boards(self, colour, boards_me)
         n_me = len(boards_me)
         if n_me == 0:
             return 'lose'
         enemy_colour = 'white' if colour == 'black' else 'black'
-        boards_enemy = Moves.get_all_next_boards(self, enemy_colour)
+        boards_enemy = []
+        Moves.get_all_next_boards(self, enemy_colour, boards_enemy)
         n_enemy = len(boards_enemy)
         if n_enemy == 0:
             return 'win'
@@ -509,9 +511,9 @@ class Moves:
         """
         return x >= 0 and x < 8 and y >= 0 and y < 8
 
-    def get_next_boards(board: Board, location: tuple, *,
+    def get_next_boards(board: Board, location: tuple, next_boards: list, *,
                         next_locations: list = None,
-                        threatened: dict = None) -> list:
+                        threatened: dict = None) -> None:
         """Get all possible boards after the Disk at the given location move.
 
         Parameters
@@ -521,6 +523,11 @@ class Moves:
 
         location : tuple
             location of the disk which we want to move it.
+
+        next_boards : list
+            list of all next boards.
+            this an output parameter i.e we use it to store the results
+            of the method.
 
         next_locations : list, optional, keyword-only
             used to store all locations that the disk at
@@ -534,8 +541,7 @@ class Moves:
 
         Returns
         -------
-        list
-            all possible boards after the Disk at the given location move.
+        None
 
         """
         # frontier is a list of tuples.
@@ -543,13 +549,12 @@ class Moves:
         # tuple[1] is the current location
         # tuple[2] is a flag that indicates if a non-eat move is allowed
         frontier = []
-        frontier.append((board, location, True))
-        # list of all next boards
-        next_boards = []
+        frontier.append((board, location))
+        non_eat_move = True
 
         while frontier:
             # retrive information if the current state
-            current_board, current_location, non_eat_move = frontier.pop()
+            current_board, current_location = frontier.pop()
             # extract the disk which we want to move
             current_disk = current_board.get_disk_at(current_location)
 
@@ -605,7 +610,7 @@ class Moves:
                 # because a disk cannot use king moves until next turn.
                 if not current_disk.is_king() and next_disk.is_king():
                     continue
-                frontier.append((next_board, next_location, False))
+                frontier.append((next_board, next_location))
             if non_eat_move is True:
                 for dx, dy in current_disk.get_directions():
                     # calculate the next location row, and colomn number
@@ -637,10 +642,11 @@ class Moves:
                         if next_locations is not None:
                             next_locations.append(next_location)
 
-        return next_boards
+            non_eat_move = False  # only first time a non-eat move allowed.
 
     def get_all_next_boards(board: Board, colour: str,
-                            threatened: dict = None) -> list:
+                            next_boards: list,
+                            threatened: dict = None) -> None:
         """Get all possible boards after moving a disk.
 
         Parameters
@@ -649,6 +655,10 @@ class Moves:
             the current board (i.e before move).
         colour : str
             the colour of the current player.
+        next_boards : list
+            list of all next boards.
+            this an output parameter i.e we use it to store the results
+            of the method.
         threatened : dict, optional
             used to store the location of every threatened disk for the enemy.
             locations are the keys.
@@ -661,21 +671,17 @@ class Moves:
 
         Returns
         -------
-        list
-            all possible boards after moving a disk.
+        None
 
         """
         if colour not in ['white', 'black']:
             raise ValueError("colour must be either 'white', or 'black'!")
 
-        next_boards = []
         # try to move each disk of the given player one at a time
         for disk in board.get_disks(colour):
-            next_boards.extend(
-                    Moves.get_next_boards(board, disk.get_location(),
-                                          threatened=threatened)
-                )
-        return next_boards
+            Moves.get_next_boards(board, disk.get_location(),
+                                  next_boards,
+                                  threatened=threatened)
 
 
 def update_draw_counter(draw_counter: int, size_before: int,
@@ -764,7 +770,9 @@ if __name__ == '__main__':
         }
         for k, v in d_moves.items():
             next_locations = []
-            _ = Moves.get_next_boards(b, k, next_locations=next_locations)
+            next_boards = []
+            Moves.get_next_boards(b, k, next_boards,
+                                  next_locations=next_locations)
             code_results = sorted(next_locations)
             correct_results = sorted(v)
             assert(code_results == correct_results)
@@ -773,7 +781,10 @@ if __name__ == '__main__':
         d.promote_to_king()
         b.add_disk_at(d, (4, 2))
         next_locations = []
-        _ = Moves.get_next_boards(b, (4, 2), next_locations=next_locations)
+        next_boards = []
+        Moves.get_next_boards(b, (4, 2), next_boards,
+                              next_locations=next_locations)
+        assert(len(next_boards) > 0)
         code_results = sorted(next_locations)
         correct_results = sorted([(3, 1), (2, 4), (0, 6),
                                   (0, 2), (2, 0), (5, 1)])
@@ -794,14 +805,16 @@ if __name__ == '__main__':
             black_disks[i] = Disk(location=loc, colour='black')
         b = Board(set(white_disks), set(black_disks))
         threatened = dict()
-        _ = Moves.get_all_next_boards(b, 'white', threatened)
+        next_boards = []
+        Moves.get_all_next_boards(b, 'white', next_boards, threatened)
         correct_results = [
                 (4, 6), (3, 3), (1, 3), (1, 5)
             ]
         assert(sorted(correct_results) == sorted(threatened.keys()))
         assert(len(threatened.keys()) == 4)
         threatened = dict()
-        _ = Moves.get_all_next_boards(b, 'black', threatened)
+        next_boards = []
+        Moves.get_all_next_boards(b, 'black', next_boards, threatened)
         correct_results = [
                 (4, 2)
             ]

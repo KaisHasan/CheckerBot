@@ -64,7 +64,7 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
             agent.set_colour(colour[turn % 2])
             # store the boards where its white turn.
             if colour[turn % 2] == 'white':
-                boards.append(current_board.copy())
+                boards.append(current_board)
             # get status of the game, 'None' indicates that game is still going
             status = current_board.get_status(colour[turn % 2], draw_counter)
 
@@ -145,7 +145,8 @@ def play(agent: Agent, train: bool = False) -> None:
 
     """
     def get_board(board, loc1, loc2):
-        boards = Moves.get_next_boards(board, loc1)
+        boards = []
+        Moves.get_next_boards(board, loc1, boards)
         for b in boards:
             if b.get_disk_at(loc2) is not None:
                 return b
@@ -162,7 +163,7 @@ def play(agent: Agent, train: bool = False) -> None:
         print(f'turn: {turn}')
         cli.show(current_board)
         if colour[turn % 2] == 'white':
-            boards.append(current_board.copy())
+            boards.append(current_board)
         if colour[turn % 2] == agent.get_colour():
             print('computer move')
         else:
