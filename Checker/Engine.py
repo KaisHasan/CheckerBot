@@ -13,8 +13,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
-    """Train the agent by making it plays games agiant its self.
+def train(agent: Agent, num_of_games: int,
+          initial_game: tuple = None,
+          output: bool = False,
+          results_output: bool = True,
+          plots: bool = True) -> tuple:
+    """Train the agent by making it plays games against its self.
 
     Parameters
     ----------
@@ -22,9 +26,22 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
         The agent to train.
     num_of_games : int
         number of training games.
+    initial_game : tuple
+        a starting game
+            first element is an initial board.
+            second element is turn's number.
+            third element is draw counter.
+        the default is None.
     output: bool, optional
         indicates if you want to print the game or not.
         the default is False.
+    results_output: bool, optional
+        indicates if you want to print the game's results or not.
+        the default is True.
+    plots: bool, optional
+        indicates if you want to print the plots for errors
+        in prediction or not.
+        the default is True.
 
     Returns
     -------
@@ -40,9 +57,9 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
     # dictionary for convert status into numbers.
     d = {'win': 1, 'lose': -1, 'draw': 0}
     # dictionary for knowing the colour of the current player
-    # 0 is the first player
-    # 1 is the second player
-    colour = {0: 'white', 1: 'black'}
+    # 1 is the first player
+    # 0 is the second player
+    colour = {1: 'white', 0: 'black'}
     # used to restore the agent colour after training end
     # thats because we are updating evaluation based on white position.
     previous_colour = agent.get_colour()
@@ -50,15 +67,19 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
 
     for i in range(num_of_games):
         boards = []  # list of white board positions through the game.
-        current_board = initial_board_generator()  # generate the initial board
+        if initial_game is None:
+            # generate the initial board
+            current_board = initial_board_generator()
+            start_turn = 1
+            draw_counter = 0
+        else:
+            current_board, start_turn, draw_counter = initial_game
         # 2-tuple
         # first element is the status (i.e 'win', 'lose', or draw).
         # second element is the colour of the player with the final status.
         final_status = (None, None)
-        # counter of non-attack moves.
-        draw_counter = 0
 
-        for turn in range(1, 10000):
+        for turn in range(start_turn, 10000):
             # alternate the roles of the same agent by setting its colour
             # to the colour of the player who should move in the current turn
             agent.set_colour(colour[turn % 2])
@@ -98,7 +119,7 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
             final_status = ('win' if final_status[0] == 'lose' else 'lose',
                             final_status[1])
         # let the agent learn using the boards positions through the game.
-        agent.learn(boards.copy(), final_status[0])
+        agent.learn(boards, final_status[0])
         # add the cost after updating.
         costs.append(agent.get_system().compute_error(boards, final_status[0]))
         # add the result of the game for white player
@@ -108,19 +129,21 @@ def train(agent: Agent, num_of_games: int, output: bool = False) -> tuple:
             print(f'{i+1} games finished unitl now!')
     # reset the colour of the agent
     agent.set_colour(previous_colour)
-    wins = results.count(1)
-    loses = results.count(-1)
-    draws = results.count(0)
-    print(f'training results of agent {agent.get_name()}')
-    print(f'wins: {wins}')
-    print(f'loses: {loses}')
-    print(f'draws: {draws}')
-    print('##################################')
-    print(f'cost: {costs[-1]}')
-    print_iter = num_of_games // 10
-    plt.plot(np.arange(0, num_of_games, print_iter + 1),
-             costs[::print_iter+1], 'k')
-    plt.show()
+    if results_output is True:
+        wins = results.count(1)
+        loses = results.count(-1)
+        draws = results.count(0)
+        print(f'training results of agent {agent.get_name()}')
+        print(f'wins: {wins}')
+        print(f'loses: {loses}')
+        print(f'draws: {draws}')
+        print('##################################')
+        print(f'cost: {costs[-1]}')
+    if plots is True:
+        print_iter = num_of_games // 10
+        plt.plot(np.arange(0, num_of_games, print_iter + 1),
+                 costs[::print_iter+1], 'k')
+        plt.show()
     return costs, results
 
 
@@ -328,7 +351,7 @@ def test_agents(agent1: Agent, agent2: Agent, num_of_games: int,
     agent2.set_colour('white')
     results = []
     for i in range(num_of_games):
-        result = play_with_other_agent(agent1, agent2, output)
+        result = play_with_other_agent(agent1, agent2, False)
         results.append(d[result])
     wins = results.count(1)
     loses = results.count(-1)

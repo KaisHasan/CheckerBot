@@ -8,6 +8,7 @@ Created on Mon Dec 14 22:24:06 2020
 from Checker.Game import Board, Moves, Disk, update_draw_counter
 import numpy as np
 import json
+import time
 
 
 class AISystem:
@@ -150,7 +151,7 @@ class FeaturesBasedSystem(AISystem):
         self._useSavedParameters = useSavedParameters
 
         # set parameters { shape = (n, 1) }:
-        self._parameters = np.random.randn(len(self._features), 1) * 0.01
+        self._parameters = (np.random.randn(len(self._features), 1)*2-1) * 0.01
         if self._useSavedParameters is True:
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
@@ -232,13 +233,13 @@ class FeaturesBasedSystem(AISystem):
         training_set = np.zeros((m, 1))
         assert(training_set.shape == (m, 1))
         # numpy array to store the predictions values
-        v_hat = self.predict(boards)
+        v_hat = self.predict(boards, 0, 0)  # turn, draw counter are ignored.
         assert(v_hat.shape == (m, 1))
 
         if final_status == 'win':
-            training_set[-1] = 1
+            training_set[-1] = 100
         elif final_status == 'lose':
-            training_set[-1] = -1
+            training_set[-1] = -100
         elif final_status == 'draw':
             training_set[-1] = 0
         else:
@@ -246,7 +247,14 @@ class FeaturesBasedSystem(AISystem):
 
         for i in range(m - 1):
             training_set[i] = v_hat[i+1]
-
+# =============================================================================
+#         print('training set:')
+#         print(training_set)
+#         print('##################################')
+#         print('prediction:')
+#         print(v_hat)
+#         print('##################################')
+# =============================================================================
         return training_set, v_hat
 
     def compute_error(self, boards: list, final_status: str) -> float:
@@ -256,7 +264,7 @@ class FeaturesBasedSystem(AISystem):
         ----------
         boards : list
             the list of all boards through the game
-            where it's white turn.
+            where it's white turn.s
         final_status : str
             the final status of the white player.
             must be 'win', 'lose', or 'draw'.
@@ -839,14 +847,15 @@ class MiniMaxAlphaBetaSystem(AISystem):
         None
 
         """
+        self._time = 0
         self._tot_num = 0
-        self._parameters = np.array([-0.01194564,
-                                    -0.02149239,
-                                     0.00013474,
-                                    -0.00838412,
-                                     0.00121441,
-                                     0.0057414 ,
-                                    -0.00907267])
+        self._parameters = np.array([-1.3725288,
+                                     -10.70278569,
+                                     3.82687392,
+                                     1.70591205,
+                                     16.49218033,
+                                     8.75494045,
+                                     -1.03340958])
         self._parameters = self._parameters.reshape((7, 1))
         assert(self._parameters.shape == (7, 1))
         self._pred_system = FeaturesBasedSystem('temp',
@@ -892,35 +901,35 @@ class MiniMaxAlphaBetaSystem(AISystem):
 
         """
         self._tot_num = 0
+        self._time = 0
         m = len(boards)
         result = np.zeros((m, 1))
-# =============================================================================
-#         boards = list(zip(boards,
-#                           self._pred_system.predict(boards,
-#                                                     turn,
-#                                                     draw_counter).ravel()
-#                           )
-#                       )
-# =============================================================================
         # there is a bug here!
         # draw_counter must be updated
         # but in practise that doesn't effect the perfomance of the system
         # so we choose to let it instead of modifing the predict function.
+        tic = time.time()
         if turn % 2 == 1:
-            current_max = -10
+            current_max = -1e7
             for i in range(m):
                 result[i] = self._max(boards[i], 1, turn, draw_counter,
                                       current_max, 1e7)
                 current_max = max(current_max, result[i])
                 # print(f'result[{i}]: {result[i]}')
         else:
-            current_min = 10
+            current_min = 1e7
             for i in range(m):
                 result[i] = self._min(boards[i], 1, turn, draw_counter,
                                       -1e7, current_min)
                 current_min = min(current_min, result[i])
                 # print(f'result[{i}]: {result[i]}')
+        toc = time.time()
+        tot_time = toc - tic
         # print(f'DEBUG: number of expanded nodes: {self._tot_num}')
+        # print(f'DEBUG: time spent by moves: {self._time} s')
+        # print(f'DEBUG: time spent by program: {tot_time} s')
+        # ratio = self._time/tot_time
+        # print(f'DEBUG: ratio for moves time: {ratio*100} %')
         return result
 
     def copy(self):
@@ -999,9 +1008,9 @@ class MiniMaxAlphaBetaSystem(AISystem):
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1
             if status == 'win':
-                return 1 * sign
+                return 100 * sign
             elif status == 'lose':
-                return -1 * sign
+                return -100 * sign
             else:
                 return 0
         if depth >= self._depth:
@@ -1032,9 +1041,9 @@ class MiniMaxAlphaBetaSystem(AISystem):
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1
             if status == 'win':
-                return 1 * sign
+                return 100 * sign
             elif status == 'lose':
-                return -1 * sign
+                return -100 * sign
             else:
                 return 0
         if depth >= self._depth:
