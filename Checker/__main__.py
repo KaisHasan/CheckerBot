@@ -10,7 +10,9 @@ from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
 from Checker.Engine import play, train, test_agents
 from Checker.AI.BoardGenerators import random_game_generator
+from Checker.AI.BoardGenerators import generate_random_training_set
 from UI import CLI
+import matplotlib.pyplot as plt
 
 
 def start_game():
@@ -56,32 +58,4 @@ def test():
 
 if __name__ == '__main__':
     # start_game()
-    test()
-# =============================================================================
-#     def get_agent(name, learning_rate):
-#         system = FeaturesBasedSystem(name, learning_rate, True)
-#         agent = Agent('white', system)
-#         return agent
-#     ag1 = get_agent('tom_agent', 0.01)
-# =============================================================================
-# =============================================================================
-#     # train(ag1, 100)
-#     results = []
-#     for i in range(3000):
-#         initial_game = random_game_generator()
-#         _, res = train(ag1, 1, initial_game, plots=False,
-#                        results_output=False)
-#         results.extend(res)
-#         if (i+1) % 100 == 0:
-#             print(f'{i+1}-th game finished!')
-#     wins = results.count(1)
-#     loses = results.count(-1)
-#     draws = results.count(0)
-#     print(f'training results of agent {ag1.get_name()}')
-#     print(f'wins: {wins}')
-#     print(f'loses: {loses}')
-#     print(f'draws: {draws}')
-#     print('##################################')
-# =============================================================================
-    # ag2 = get_agent('tom_agent', 0.01)
-    # test_agents(ag1, ag2, 1, True)
+    # test()

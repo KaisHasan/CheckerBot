@@ -151,7 +151,9 @@ class FeaturesBasedSystem(AISystem):
         self._useSavedParameters = useSavedParameters
 
         # set parameters { shape = (n, 1) }:
-        self._parameters = (np.random.randn(len(self._features), 1)*2-1) * 0.01
+        # self._parameters = (np.random.randn(len(self._features), 1)*2-1) * 0.01
+        self._parameters = np.array([0, -1, 1, -2, 2, 0.5, -0.5])
+        self._parameters = self._parameters.reshape((7, 1))
         if self._useSavedParameters is True:
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
@@ -833,6 +835,8 @@ class NeuralNetworkBasedSystem(AISystem):
 class MiniMaxAlphaBetaSystem(AISystem):
     """MiniMax alpha Beta for system for checker bot."""
 
+    maximum_nodes_number = 5000
+
     def __init__(self, depth: int) -> None:
         """Initialize the system.
 
@@ -849,20 +853,28 @@ class MiniMaxAlphaBetaSystem(AISystem):
         """
         self._time = 0
         self._tot_num = 0
-        self._parameters = np.array([-1.3725288,
-                                     -10.70278569,
-                                     3.82687392,
-                                     1.70591205,
-                                     16.49218033,
-                                     8.75494045,
-                                     -1.03340958])
+        self._parameters = np.array([-2.96375867,
+                                     -5.44375349,
+                                     6.19284005,
+                                     -3.51060197,
+                                     6.26745772,
+                                     2.67181173,
+                                     -1.07070411])
         self._parameters = self._parameters.reshape((7, 1))
         assert(self._parameters.shape == (7, 1))
         self._pred_system = FeaturesBasedSystem('temp',
                                                 0.01,
                                                 False)
         self._pred_system.set_parameters(self._parameters)
-        self._depth = depth
+        self._dynamic_depth = False
+        if depth is None:
+            self._depth = 5
+            self._dynamic_depth = True
+        else:
+            self._depth = depth
+
+    def set_system(self, system: AISystem) -> None:
+        self._pred_system = system
 
     def update_parameters(self, boards: list, final_status: str) -> None:
         """Use it to update the parameters of the system.
@@ -925,11 +937,15 @@ class MiniMaxAlphaBetaSystem(AISystem):
                 # print(f'result[{i}]: {result[i]}')
         toc = time.time()
         tot_time = toc - tic
+        print(f'DEBUG: depth reached: {self._depth}')
         print(f'DEBUG: number of expanded nodes: {self._tot_num}')
-        print(f'DEBUG: time spent by moves: {self._time} s')
+        # print(f'DEBUG: time spent by moves: {self._time} s')
         print(f'DEBUG: time spent by program: {tot_time} s')
-        ratio = self._time/tot_time
-        print(f'DEBUG: ratio for moves time: {ratio*100} %')
+        # ratio = self._time/tot_time
+        # print(f'DEBUG: ratio for moves time: {ratio*100} %')
+        if self._dynamic_depth is True:
+            if self._tot_num < MiniMaxAlphaBetaSystem.maximum_nodes_number:
+                self._depth += 1
         return result
 
     def copy(self):
@@ -1004,6 +1020,10 @@ class MiniMaxAlphaBetaSystem(AISystem):
              turn: int, draw_counter: int,
              alpha: float, beta: float) -> float:
         self._tot_num += 1
+        if self._dynamic_depth is True:
+            if self._tot_num > MiniMaxAlphaBetaSystem.maximum_nodes_number:
+                return np.sum(self._pred_system.predict([board], turn,
+                                                        draw_counter))
         status = self._terminal_state(board, turn, draw_counter)
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1
@@ -1037,6 +1057,10 @@ class MiniMaxAlphaBetaSystem(AISystem):
              turn: int, draw_counter: int,
              alpha: float, beta: float) -> float:
         self._tot_num += 1
+        if self._dynamic_depth is True:
+            if self._tot_num > MiniMaxAlphaBetaSystem.maximum_nodes_number:
+                return np.sum(self._pred_system.predict([board], turn,
+                                                        draw_counter))
         status = self._terminal_state(board, turn, draw_counter)
         if status is not None:
             sign = 1 if turn % 2 == 1 else -1

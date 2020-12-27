@@ -118,10 +118,10 @@ def train(agent: Agent, num_of_games: int,
         if final_status[1] == 'black' and final_status[0] != 'draw':
             final_status = ('win' if final_status[0] == 'lose' else 'lose',
                             final_status[1])
+        # add the cost before updating.
+        costs.append(agent.get_system().compute_error(boards, final_status[0]))
         # let the agent learn using the boards positions through the game.
         agent.learn(boards, final_status[0])
-        # add the cost after updating.
-        costs.append(agent.get_system().compute_error(boards, final_status[0]))
         # add the result of the game for white player
         results.append(d[final_status[0]])
 
