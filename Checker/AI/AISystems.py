@@ -925,11 +925,11 @@ class MiniMaxAlphaBetaSystem(AISystem):
                 # print(f'result[{i}]: {result[i]}')
         toc = time.time()
         tot_time = toc - tic
-        # print(f'DEBUG: number of expanded nodes: {self._tot_num}')
-        # print(f'DEBUG: time spent by moves: {self._time} s')
-        # print(f'DEBUG: time spent by program: {tot_time} s')
-        # ratio = self._time/tot_time
-        # print(f'DEBUG: ratio for moves time: {ratio*100} %')
+        print(f'DEBUG: number of expanded nodes: {self._tot_num}')
+        print(f'DEBUG: time spent by moves: {self._time} s')
+        print(f'DEBUG: time spent by program: {tot_time} s')
+        ratio = self._time/tot_time
+        print(f'DEBUG: ratio for moves time: {ratio*100} %')
         return result
 
     def copy(self):

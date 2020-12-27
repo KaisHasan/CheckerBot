@@ -45,7 +45,7 @@ def start_game():
 
 
 def test():
-    level = 6
+    level = 5
     agent_colour = 'white'
     print(f'agent colour: {agent_colour}')
     print(f'agent difficulty: {level}')
