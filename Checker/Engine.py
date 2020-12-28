@@ -11,6 +11,7 @@ from Checker.UI import CLI
 from Checker.Game import Moves, update_draw_counter
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
 
 def train(agent: Agent, num_of_games: int,
@@ -64,6 +65,7 @@ def train(agent: Agent, num_of_games: int,
     # thats because we are updating evaluation based on white position.
     previous_colour = agent.get_colour()
     results = []  # store the results of the games.
+    prob = 30
 
     for i in range(num_of_games):
         boards = []  # list of white board positions through the game.
@@ -105,8 +107,19 @@ def train(agent: Agent, num_of_games: int,
 
             # get the next board
             # this done by letting the agent choose the move.
-            current_board = agent.choose_board(current_board,
-                                               turn, draw_counter)
+            if colour[turn % 2] == 'white':
+                r = random.randint(0, prob)
+                if r == 1:
+                    next_boards = []
+                    Moves.get_all_next_boards(current_board, 'white',
+                                              next_boards)
+                    current_board = random.choice(next_boards)
+                else:
+                    current_board = agent.choose_board(current_board,
+                                                       turn, draw_counter)
+            else:
+                current_board = agent.choose_board(current_board,
+                                                   turn, draw_counter)
 
             # number of disks before the move:
             size_after = current_board.get_number_of_disks(None)

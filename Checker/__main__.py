@@ -17,8 +17,10 @@ import matplotlib.pyplot as plt
 
 def start_game():
 
-    print('Welcome to the Checker Game')
-    print('please note that white is always plays first')
+    print('#############################')
+    print('#Welcome to the Checker Game#')
+    print('#############################')
+    print('please note that white is always plays first!')
 
     print('colours available for you are: white, black')
     while True:
@@ -57,5 +59,18 @@ def test():
 
 
 if __name__ == '__main__':
-    # start_game()
+    start_game()
     # test()
+# =============================================================================
+#     def get_agent(name):
+#         system = FeaturesBasedSystem(name, 0.1, True)
+#         agent = Agent('white', system)
+#         return agent
+# 
+#     ag1 = get_agent('tom_agent_test')
+#     ag2 = get_agent('tom_agent')
+# =============================================================================
+
+    # train(ag1, 5000)
+
+    # test_agents(ag1, ag2, 10)
