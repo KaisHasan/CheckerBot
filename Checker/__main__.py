@@ -9,10 +9,6 @@ from Checker.AI.AISystems import MiniMaxAlphaBetaSystem
 from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
 from Checker.Engine import play, train, test_agents
-from Checker.AI.BoardGenerators import random_game_generator
-from Checker.AI.BoardGenerators import generate_random_training_set
-from UI import CLI
-import matplotlib.pyplot as plt
 
 
 def start_game():
