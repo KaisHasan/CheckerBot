@@ -9,6 +9,7 @@ from Checker.AI.AISystems import MiniMaxAlphaBetaSystem
 from Checker.AI.AISystems import FeaturesBasedSystem
 from Checker.AI.Agent import Agent
 from Checker.Engine import play, train, test_agents
+import random
 
 
 def start_game():
@@ -28,12 +29,12 @@ def start_game():
             print('please enter a valid colour!')
     while True:
         try:
-            level = int(input('enter the difficulty level [1-6]: '))
+            level = int(input('enter the difficulty level [1-5]: '))
         except Exception:
             print('please enter an integer value!')
             continue
-        if level > 6 or level < 1:
-            print('please enter a value in range [1, 6]')
+        if level > 5 or level < 1:
+            print('please enter a value in range [1, 5]')
             continue
         break
     agent_colour = 'white' if colour == 'black' else 'black'
@@ -58,15 +59,31 @@ if __name__ == '__main__':
     start_game()
     # test()
 # =============================================================================
-#     def get_agent(name):
-#         system = FeaturesBasedSystem(name, 0.1, True)
+#     def get_agent(name, learning_rate = 0.0001):
+#         system = FeaturesBasedSystem(name, learning_rate, True)
 #         agent = Agent('white', system)
 #         return agent
 # 
-#     ag1 = get_agent('tom_agent_test')
+#     learning_rate = 0.1
 #     ag2 = get_agent('tom_agent')
+#     ag3 = get_agent('tom_agent_test1')
+# # =============================================================================
+# #     for i in range(5):
+# #         print(f'iteration {i+1}:')
+# #         ag1 = get_agent('tom_agent_test', learning_rate)
+# #         train(ag1, 200, explore_probability=5)
+# #         learning_rate /= 2
+# # =============================================================================
+# 
+# # =============================================================================
+# #     ag1 = get_agent('tom_agent_test', learning_rate)
+# #     train(ag1, 100, explore_probability=10)
+# # =============================================================================
+# 
+#     # test_agents(ag1, ag2, 10)
+#     # test_agents(ag1, ag3, 10)
+#     print(f'{ag1.get_name()} parameters')
+#     print(ag1.get_system()._parameters)
+#     print(f'{ag2.get_name()} parameters')
+#     print(ag2.get_system()._parameters)
 # =============================================================================
-
-    # train(ag1, 5000)
-
-    # test_agents(ag1, ag2, 10)

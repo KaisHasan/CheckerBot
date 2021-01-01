@@ -87,8 +87,9 @@ class Agent:
             raise ValueError("colour must be either 'white', or 'black'!")
         self._colour = colour
 
-    def get_fitness(self, boards: list, turn: int, draw_counter: int) -> float:
-        """Get the fitness value of a given board.
+    def get_fitness(self, boards: list, turn: int,
+                    draw_counter: int) -> np.array:
+        """Get the fitness value of a given list of boards.
 
         this function will calculate for each board how good it is, using
         agent' system specific prediction.
@@ -104,8 +105,9 @@ class Agent:
 
         Returns
         -------
-        float
-            how good the board is (i.e the fitness value of the board).
+        np.array
+            the fitnesses values of the given boards
+            (i.e how good they are for white).
 
         """
         return self._system.predict(boards, turn, draw_counter)

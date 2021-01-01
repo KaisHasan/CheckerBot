@@ -16,6 +16,7 @@ import random
 
 def train(agent: Agent, num_of_games: int,
           initial_game: tuple = None,
+          explore_probability: float = 10,
           output: bool = False,
           results_output: bool = True,
           plots: bool = True) -> tuple:
@@ -33,6 +34,12 @@ def train(agent: Agent, num_of_games: int,
             second element is turn's number.
             third element is draw counter.
         the default is None.
+    explore_probability : int
+        the probability that the agent choose to explore a random
+        move to explore instead of playing the optimal move he learnt so far.
+        if it's None then no exploration will happened.
+        the probability will be 1/explore_probability.
+        the default is 0.1.
     output: bool, optional
         indicates if you want to print the game or not.
         the default is False.
@@ -65,8 +72,9 @@ def train(agent: Agent, num_of_games: int,
     # thats because we are updating evaluation based on white position.
     previous_colour = agent.get_colour()
     results = []  # store the results of the games.
-    prob = 30
-
+    # the probability that the agent will choose random move.
+    prob = explore_probability
+    data_set = {'board': [], 'f_status': []}
     for i in range(num_of_games):
         boards = []  # list of white board positions through the game.
         if initial_game is None:
@@ -85,7 +93,7 @@ def train(agent: Agent, num_of_games: int,
             # alternate the roles of the same agent by setting its colour
             # to the colour of the player who should move in the current turn
             agent.set_colour(colour[turn % 2])
-            # store the boards where its white turn.
+            # store the boards when its white turn.
             if colour[turn % 2] == 'white':
                 boards.append(current_board)
             # get status of the game, 'None' indicates that game is still going
@@ -107,16 +115,13 @@ def train(agent: Agent, num_of_games: int,
 
             # get the next board
             # this done by letting the agent choose the move.
-            if colour[turn % 2] == 'white':
-                r = random.randint(0, prob)
-                if r == 1:
-                    next_boards = []
-                    Moves.get_all_next_boards(current_board, 'white',
-                                              next_boards)
-                    current_board = random.choice(next_boards)
-                else:
-                    current_board = agent.choose_board(current_board,
-                                                       turn, draw_counter)
+            if prob is not None:
+                r = random.randint(1, prob)
+            if prob is not None and r == 1:
+                next_boards = []
+                Moves.get_all_next_boards(current_board, colour[turn % 2],
+                                          next_boards)
+                current_board = random.choice(next_boards)
             else:
                 current_board = agent.choose_board(current_board,
                                                    turn, draw_counter)
@@ -134,14 +139,31 @@ def train(agent: Agent, num_of_games: int,
         # add the cost before updating.
         costs.append(agent.get_system().compute_error(boards, final_status[0]))
         # let the agent learn using the boards positions through the game.
-        agent.learn(boards, final_status[0])
+        # agent.learn(boards, final_status[0])
         # add the result of the game for white player
         results.append(d[final_status[0]])
+        data_set['board'].append(boards)
+        data_set['f_status'].append(final_status[0])
 
         if (i+1) % 100 == 0:
             print(f'{i+1} games finished unitl now!')
     # reset the colour of the agent
     agent.set_colour(previous_colour)
+    # let the agent learn from the previous games
+    m = min(results.count(-1), results.count(1))
+    lose_m = m
+    win_m  = m
+    for i in range(num_of_games):
+        bs = data_set['board'][i]
+        fs = data_set['f_status'][i]
+        if fs == 'win' and win_m > 0:
+            agent.learn(bs, fs)
+            win_m -= 1
+        elif fs == 'lose' and lose_m > 0:
+            agent.learn(bs, fs)
+            lose_m -= 1
+        elif fs == 'draw':
+            agent.learn(bs, fs)
     if results_output is True:
         wins = results.count(1)
         loses = results.count(-1)
@@ -153,7 +175,7 @@ def train(agent: Agent, num_of_games: int,
         print('##################################')
         print(f'cost: {costs[-1]}')
     if plots is True:
-        print_iter = num_of_games // 10
+        print_iter = num_of_games // num_of_games
         plt.plot(np.arange(0, num_of_games, print_iter + 1),
                  costs[::print_iter+1], 'k')
         plt.show()

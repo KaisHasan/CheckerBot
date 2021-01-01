@@ -151,9 +151,9 @@ class FeaturesBasedSystem(AISystem):
         self._useSavedParameters = useSavedParameters
 
         # set parameters { shape = (n, 1) }:
-        # self._parameters = (np.random.randn(len(self._features), 1)*2-1) * 0.01
-        self._parameters = np.array([0, -1, 1, -2, 2, 0.5, -0.5])
-        self._parameters = self._parameters.reshape((7, 1))
+        self._parameters = (np.random.randn(len(self._features), 1)*2-1)
+        # self._parameters = np.array([0, -1, 1, -2, 2, 0.5, -0.5])z
+        # self._parameters = self._parameters.reshape((7, 1))
         if self._useSavedParameters is True:
             try:
                 with open(self._name + '_' + 'parameters.npy', 'rb') as f:
@@ -946,6 +946,8 @@ class MiniMaxAlphaBetaSystem(AISystem):
                                       -1e7, current_min)
                 current_min = min(current_min, result[i])
                 # print(f'result[{i}]: {result[i]}')
+
+        # the following code for DEBUG.
         toc = time.time()
         tot_time = toc - tic
         # print(f'DEBUG: depth reached: {self._depth}')
@@ -1030,13 +1032,19 @@ class MiniMaxAlphaBetaSystem(AISystem):
     def _max(self, board: Board, depth: int,
              turn: int, draw_counter: int,
              alpha: float, beta: float) -> float:
-        self._tot_num += 1
+        self._tot_num += 1  # increase the number of explored nodes.
+
+        # apply dynamic path feature if it's set to true.
+        # please note that this feature is under tests.
         if self._dynamic_depth is True:
             if self._tot_num > MiniMaxAlphaBetaSystem.maximum_nodes_number:
                 return np.sum(self._pred_system.predict([board], turn,
                                                         draw_counter))
+
+        # get the status if current node.
         status = self._terminal_state(board, turn, draw_counter)
         if status is not None:
+            # lose for black is win for white and vice versa.
             sign = 1 if turn % 2 == 1 else -1
             if status == 'win':
                 return 100 * sign
@@ -1044,11 +1052,17 @@ class MiniMaxAlphaBetaSystem(AISystem):
                 return -100 * sign
             else:
                 return 0
+
+        # if we reach the maximum depth then stop and return
+        # a prediction of the current board state.
         if depth >= self._depth:
             return np.sum(self._pred_system.predict([board], turn,
                                                     draw_counter))
+
+        # generate the next boards by applying the valid moves.
         boards = []
         Moves.get_all_next_boards(board, 'white', boards)
+
         current_max = -1e7
         size_before = board.get_number_of_disks(None)
         for b in boards:
